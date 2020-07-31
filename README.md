@@ -18,6 +18,9 @@ The ripple detection algorithm works in two steps:
 - Use this plugin before a sink block (LFP Viewer or Pulse Pal blocks, for instance).
 
 ## Plugin interface and parameters set by the user
+
+![Image of RippleDetector](rippleDetector.png)
+
 - Input channel: the number of the input channel from which data will be processed;
 - Output channel: the number of the output channel where detection events are marked;
 - SDs: number of standard deviations above the average to be the amplitude threshold;
