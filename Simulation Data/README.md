@@ -5,6 +5,6 @@ Ripples_Simulation.kwd includes simulation data to test the ripple detection plu
 - Fast ripples: events in the 250Hz-500Hz frequency band;
 - Spike artefacts: sudden peaks with low duration and high amplitude.
 
-![Image of RippleDetector](simulationData.png)
+![Image of SimulationData](simulationData.png)
 
 
