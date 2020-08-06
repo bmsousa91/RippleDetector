@@ -1,0 +1,43 @@
+{
+   "GUI version":"0.4.5",
+   "continuous":[
+	  {
+         "folder_name":"rippleSimData/",
+         "sample_rate":40000,
+         "source_processor_name":"Demo source",
+         "source_processor_id":100,
+         "source_processor_sub_idx":0,
+         "recorded_processor":"Demo source",
+         "recorded_processor_id":100,
+         "num_channels":2,
+         "channels":[
+            {
+               "channel_name":"CH0",
+               "description":"Demo data channel",
+               "identifier":"genericdata.continuous",
+               "history":"Demo source",
+               "bit_volts":0.05,
+               "units":"uV",
+               "source_processor_index":0,
+               "recorded_processor_index":0
+            },
+            {
+               "channel_name":"CH1",
+               "description":"Demo data channel",
+               "identifier":"genericdata.continuous",
+               "history":"Demo source",
+               "bit_volts":0.05,
+               "units":"uV",
+               "source_processor_index":1,
+               "recorded_processor_index":1
+            }
+         ]
+      }
+   ],
+   "events":[
+
+   ],
+   "spikes":[
+
+   ]
+}
