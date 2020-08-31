@@ -98,22 +98,6 @@ AudioProcessorEditor *RippleDetector::createEditor()
     return editor;
 }
 
-void RippleDetector::sendTtlEvent(int rmsIndex, int val)
-{
-    //Send event only when the animal is not moving
-    if (!isPluginEnabled)
-        return;
-
-    //Timestamp for this sample
-    uint64 time_stamp = getTimestamp(inputChannel) + rmsIndex;
-
-    uint8 ttlData;
-    uint8 output_event_channel = outputChannel;
-    ttlData = val << outputChannel;
-    TTLEventPtr ttl = TTLEvent::createTTLEvent(pTtlEventChannel, time_stamp, &ttlData, sizeof(uint8), output_event_channel);
-    addEvent(pTtlEventChannel, ttl, rmsIndex);
-}
-
 void RippleDetector::process(AudioSampleBuffer &rInBuffer)
 {
 	//Update parameters according to UI
@@ -126,6 +110,7 @@ void RippleDetector::process(AudioSampleBuffer &rInBuffer)
 	refractoryTime = pRippleDetectorEditor->_pluginUi._refractoryTime;
 	rmsBlockSize = pRippleDetectorEditor->_pluginUi._rmsSamples;
 	bufferSize = rInBuffer.getNumSamples();
+	realNumberOfSamples = GenericProcessor::getNumSamples(inputChannel);
 	
 	if (pRippleDetectorEditor->_pluginUi._calibrate == true)
 	{
@@ -134,7 +119,7 @@ void RippleDetector::process(AudioSampleBuffer &rInBuffer)
 		isCalibrating = true;
 		currentBuffer = 0;
 
-		// reset calibration RMS array
+		//Reset calibration RMS array
 		calibrationRms.clear();
 	}
 
@@ -146,10 +131,10 @@ void RippleDetector::process(AudioSampleBuffer &rInBuffer)
 	if (rmsBlockSize < MINIMUM_RMS_BLOCK_SIZE)
 		rmsBlockSize = MINIMUM_RMS_BLOCK_SIZE;
 
-	if (rmsBlockSize > bufferSize) {
-		pRippleDetectorEditor->_pluginUi._sliderRmsSamples->setValue(bufferSize);
-		pRippleDetectorEditor->_pluginUi._rmsSamples = bufferSize;
-		rmsBlockSize = bufferSize;
+	if (rmsBlockSize > realNumberOfSamples) {
+		pRippleDetectorEditor->_pluginUi._sliderRmsSamples->setValue(realNumberOfSamples);
+		pRippleDetectorEditor->_pluginUi._rmsSamples = realNumberOfSamples;
+		rmsBlockSize = realNumberOfSamples;
 	}
 
 	if (thresholdSds < MINIMUM_THRESHOLD_AMP)
@@ -169,15 +154,19 @@ void RippleDetector::process(AudioSampleBuffer &rInBuffer)
 	localRms.clear();
 
 	//Generate RMS buffer
-	for (int rms_index = 0; rms_index < rInBuffer.getNumSamples(); rms_index += rmsBlockSize)
+	for (int rms_index = 0; rms_index < realNumberOfSamples; rms_index += rmsBlockSize)
 	{
-		if (rms_index + rmsBlockSize > bufferSize)
+		if (rms_index + rmsBlockSize > realNumberOfSamples)
 		{
-			break;
+			rmsEndIndex = realNumberOfSamples;
+			//break;
+		}
+		else {
+			rmsEndIndex = rms_index + rmsBlockSize;
 		}
 
 		//RMS calculation
-		double rms = calculateRms(rSamples, rms_index, rms_index + rmsBlockSize);
+		double rms = calculateRms(rSamples, rms_index, rmsEndIndex);
 
 		//Calculate average between RMSs to determine baseline threshold
 		if (isCalibrating)
@@ -208,6 +197,50 @@ void RippleDetector::process(AudioSampleBuffer &rInBuffer)
 
 	//Count how many buffers have been processed
 	currentBuffer++;
+}
+
+void RippleDetector::calibrate()
+{
+	if (currentBuffer > calibrationBuffers)
+	{
+		printf("Finished calibration...\n");
+
+		//Set flag to false to end the calibration period
+		isCalibrating = false;
+
+		//Calculate statistics
+		rmsMean = rmsMean / (double)calibrationRms.size();
+
+		//Calculate standard deviation
+		for (unsigned int rms_sample = 0; rms_sample < calibrationRms.size(); rms_sample++)
+		{
+			rmsStandardDeviation += pow(calibrationRms[rms_sample] - rmsMean, 2.0);
+		}
+		rmsStandardDeviation = sqrt(rmsStandardDeviation / ((double)calibrationRms.size() - 1.0));
+
+		threshold = rmsMean + thresholdSds * rmsStandardDeviation;
+
+		//Printf calculated statistics
+		printf("RMS Mean: %f\n"
+			"RMS Deviation: %f\n"
+			"Threshold amplifier %f\n"
+			"Calculated RMS Threshold: %f\n",
+			rmsMean, rmsStandardDeviation, thresholdSds, threshold);
+	}
+}
+
+//Calculate the RMS of rInBuffer data from position initIndex (included) to endIndexOpen (not included)
+double RippleDetector::calculateRms(const float *rInBuffer, int initIndex, int endIndexOpen)
+{
+	double sum = 0.0;
+	std::string a;
+	for (int cnt = initIndex; cnt < endIndexOpen; cnt++)
+	{
+		sum += pow(rInBuffer[cnt], 2.0);
+	}
+
+	double rms = sqrt(sum / rmsBlockSize);
+	return rms;
 }
 
 void RippleDetector::detectRipples(std::vector<double> &rInRmsBuffer)
@@ -273,47 +306,20 @@ void RippleDetector::detectRipples(std::vector<double> &rInRmsBuffer)
     }
 }
 
-void RippleDetector::calibrate()
+void RippleDetector::sendTtlEvent(int rmsIndex, int val)
 {
-    if (currentBuffer > calibrationBuffers)
-    {
-        printf("Finished calibration...\n");
+	//Send event only when the animal is not moving
+	if (!isPluginEnabled)
+		return;
 
-        //Set flag to false to end the calibration period
-        isCalibrating = false;
+	//Timestamp for this sample
+	uint64 time_stamp = getTimestamp(inputChannel) + rmsIndex;
 
-        //Calculate statistics
-        rmsMean = rmsMean / (double)calibrationRms.size();
-
-        //Calculate standard deviation
-        for (unsigned int rms_sample = 0; rms_sample < calibrationRms.size(); rms_sample++)
-        {
-            rmsStandardDeviation += pow(calibrationRms[rms_sample] - rmsMean, 2.0);
-        }
-        rmsStandardDeviation = sqrt(rmsStandardDeviation / ((double)calibrationRms.size() - 1.0));
-
-        threshold = rmsMean + thresholdSds * rmsStandardDeviation;
-
-        //Printf calculated statistics
-        printf("RMS Mean: %f\n"
-               "RMS Deviation: %f\n"
-               "Threshold amplifier %f\n"
-               "Calculated RMS Threshold: %f\n",
-               rmsMean, rmsStandardDeviation, thresholdSds, threshold);
-    }
-}
-
-//Calculate the RMS of rInBuffer data from position initIndex (included) to endIndexOpen (not included)
-double RippleDetector::calculateRms(const float *rInBuffer, int initIndex, int endIndexOpen)
-{
-    double sum = 0.0;
-    for (int cnt = initIndex; cnt < endIndexOpen; cnt++)
-    {
-        sum += pow(rInBuffer[cnt], 2.0);
-    }
-
-    double rms = sqrt(sum / rmsBlockSize);
-    return rms;
+	uint8 ttlData;
+	uint8 output_event_channel = outputChannel;
+	ttlData = val << outputChannel;
+	TTLEventPtr ttl = TTLEvent::createTTLEvent(pTtlEventChannel, time_stamp, &ttlData, sizeof(uint8), output_event_channel);
+	addEvent(pTtlEventChannel, ttl, rmsIndex);
 }
 
 void RippleDetector::handleEvent(const EventChannel *rInEventInfo, const MidiMessage &rInEvent, int samplePosition)
