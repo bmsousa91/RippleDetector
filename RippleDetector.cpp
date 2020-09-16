@@ -233,14 +233,13 @@ void RippleDetector::calibrate()
 double RippleDetector::calculateRms(const float *rInBuffer, int initIndex, int endIndexOpen)
 {
 	double sum = 0.0;
-	std::string a;
 	for (int cnt = initIndex; cnt < endIndexOpen; cnt++)
 	{
 		sum += pow(rInBuffer[cnt], 2.0);
+		if(writeToFile) file << rInBuffer[cnt] << "\n";
 	}
 
-	double rms = sqrt(sum / rmsBlockSize);
-	return rms;
+	return sqrt(sum / (endIndexOpen - initIndex));
 }
 
 void RippleDetector::detectRipples(std::vector<double> &rInRmsBuffer)
