@@ -16,6 +16,7 @@ The ripple detection algorithm works in two steps:
 ## Usage
 - Use this plugin after a Bandpass Filter block filtered in the ripple band;
 - Use this plugin before a sink block (LFP Viewer or Pulse Pal blocks, for instance).
+- Note: the parameters for the best ripple detection scenario may vary from animal to animal. We recommend that you perform a first recording session and adjust the parameters using the File Reader source node with the same data.
 
 ## Plugin interface and parameters set by the user
 
