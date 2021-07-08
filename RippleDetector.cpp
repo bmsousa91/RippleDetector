@@ -9,7 +9,7 @@
 RippleDetector::RippleDetector()
     : GenericProcessor("RippleDetector")
 {
-	//Init variables
+	//Initiate variables
     calibrationBuffers = CALIBRATION_BUFFERS_COUNT;
     currentBuffer = 0;
     rmsMean = 0.0;
@@ -17,17 +17,23 @@ RippleDetector::RippleDetector()
     threshold = 0.0;
     thresholdSds = 1.0f;
 	thresholdTime = 5.0f;
-    isPluginEnabled = true;
-    detectionEnabled = true;
-    isCalibrating = true;
 	sampleRate = CoreServices::getGlobalSampleRate();
 
     setProcessorType(PROCESSOR_TYPE_FILTER);
     createEventChannels();
+
+	//These code lines write the input data in a file.
+	//It is useful for debugging purposes...
+	if (writeToFile) {
+		file.open("data.csv", std::ios::app);
+		file.precision(12);
+	}
+
 }
 
 RippleDetector::~RippleDetector()
 {
+	if(writeToFile) file.close();
 }
 
 bool RippleDetector::enable()
@@ -100,7 +106,7 @@ AudioProcessorEditor *RippleDetector::createEditor()
 
 void RippleDetector::process(AudioSampleBuffer &rInBuffer)
 {
-	//Update parameters according to UI
+	//Update parameters according to user's interface
 	const DataChannel *in = getDataChannel(0);
 
 	outputChannel = pRippleDetectorEditor->_pluginUi._outChannel - 1;
@@ -111,6 +117,13 @@ void RippleDetector::process(AudioSampleBuffer &rInBuffer)
 	rmsBlockSize = pRippleDetectorEditor->_pluginUi._rmsSamples;
 	bufferSize = rInBuffer.getNumSamples();
 	realNumberOfSamples = GenericProcessor::getNumSamples(inputChannel);
+
+	//printf("bufferSize %d\n", bufferSize);
+	//printf("realNumberOfSamples %d\n", realNumberOfSamples);
+
+	//Sometimes it occurs that the number of input samples is 0
+	//In this case, end the process
+	if (realNumberOfSamples == 0) return;
 	
 	if (pRippleDetectorEditor->_pluginUi._calibrate == true)
 	{
@@ -123,8 +136,7 @@ void RippleDetector::process(AudioSampleBuffer &rInBuffer)
 		calibrationRms.clear();
 	}
 
-	//Check parameters range and adjust if necessary,
-	//including updates in the plugin interface
+	//Check parameter's range and adjust if necessary.
 	if (refractoryTime < MINIMUM_REFRACTORY_TIME)
 		refractoryTime = MINIMUM_REFRACTORY_TIME;
 
@@ -132,8 +144,8 @@ void RippleDetector::process(AudioSampleBuffer &rInBuffer)
 		rmsBlockSize = MINIMUM_RMS_BLOCK_SIZE;
 
 	if (rmsBlockSize > realNumberOfSamples) {
-		pRippleDetectorEditor->_pluginUi._sliderRmsSamples->setValue(realNumberOfSamples);
-		pRippleDetectorEditor->_pluginUi._rmsSamples = realNumberOfSamples;
+		/*pRippleDetectorEditor->_pluginUi._sliderRmsSamples->setValue(realNumberOfSamples);
+		pRippleDetectorEditor->_pluginUi._rmsSamples = realNumberOfSamples;*/
 		rmsBlockSize = realNumberOfSamples;
 	}
 
@@ -150,16 +162,25 @@ void RippleDetector::process(AudioSampleBuffer &rInBuffer)
 	//Get raw data
 	const float *rSamples = rInBuffer.getReadPointer(inputChannel);
 
-	//Guarante that the RMS buffer will be clean
+	//Guarantee that the RMS buffer will be clean
 	localRms.clear();
 
-	//Generate RMS buffer
+	//Write input data into a string, so it becomes easier to analyze.
+	//For debugging purposes only...
+	//String completeString;
+	//for (int i = 0; i < bufferSize; i++)
+	//{
+	//	completeString += String(rSamples[i]);
+	//	completeString += " ";
+	//}
+
+	//Calculate RMS for each subblock inside buffer
 	for (int rms_index = 0; rms_index < realNumberOfSamples; rms_index += rmsBlockSize)
 	{
+		//Get rid of extra 0-valued samples in the end of the buffer
 		if (rms_index + rmsBlockSize > realNumberOfSamples)
 		{
 			rmsEndIndex = realNumberOfSamples;
-			//break;
 		}
 		else {
 			rmsEndIndex = rms_index + rmsBlockSize;
@@ -186,8 +207,7 @@ void RippleDetector::process(AudioSampleBuffer &rInBuffer)
 	if (isCalibrating)
 	{
 		//Printf which calibration buffer is being used
-		printf("Ripple Detection - calibration buffer processed: %d out of %d\n", currentBuffer, calibrationBuffers);
-
+		//printf("Ripple Detection - calibration buffer processed: %d out of %d\n", currentBuffer, calibrationBuffers);
 		calibrate();
 	}
 	else
@@ -199,11 +219,24 @@ void RippleDetector::process(AudioSampleBuffer &rInBuffer)
 	currentBuffer++;
 }
 
+//Calculate the RMS of rInBuffer data from position initIndex (included) to endIndexOpen (not included)
+double RippleDetector::calculateRms(const float *rInBuffer, int initIndex, int endIndexOpen)
+{
+	double sum = 0.0;
+	for (int cnt = initIndex; cnt < endIndexOpen; cnt++)
+	{
+		sum += pow(rInBuffer[cnt], 2.0);
+		if(writeToFile) file << rInBuffer[cnt] << "\n";
+	}
+
+	return sqrt(sum / (endIndexOpen - initIndex));
+}
+
 void RippleDetector::calibrate()
 {
-	if (currentBuffer > calibrationBuffers)
+	if (currentBuffer == calibrationBuffers)
 	{
-		printf("Finished calibration...\n");
+		printf("Calibration finished...\n");
 
 		//Set flag to false to end the calibration period
 		isCalibrating = false;
@@ -221,25 +254,13 @@ void RippleDetector::calibrate()
 		threshold = rmsMean + thresholdSds * rmsStandardDeviation;
 
 		//Printf calculated statistics
-		printf("RMS Mean: %f\n"
+		printf(
+			"RMS Mean: %f\n"
 			"RMS Deviation: %f\n"
 			"Threshold amplifier %f\n"
 			"Calculated RMS Threshold: %f\n",
 			rmsMean, rmsStandardDeviation, thresholdSds, threshold);
 	}
-}
-
-//Calculate the RMS of rInBuffer data from position initIndex (included) to endIndexOpen (not included)
-double RippleDetector::calculateRms(const float *rInBuffer, int initIndex, int endIndexOpen)
-{
-	double sum = 0.0;
-	for (int cnt = initIndex; cnt < endIndexOpen; cnt++)
-	{
-		sum += pow(rInBuffer[cnt], 2.0);
-		if(writeToFile) file << rInBuffer[cnt] << "\n";
-	}
-
-	return sqrt(sum / (endIndexOpen - initIndex));
 }
 
 void RippleDetector::detectRipples(std::vector<double> &rInRmsBuffer)
@@ -265,7 +286,7 @@ void RippleDetector::detectRipples(std::vector<double> &rInRmsBuffer)
 			continue;
 		}
 
-		printf("detected %d, can_detect %d, refractory %d, sample %f, thresh %f\n", detected, detectionEnabled, onRefractoryTime, sample, threshold);
+		//printf("detected %d, can_detect %d, refractory %d, sample %f, thresh %f\n", detected, detectionEnabled, onRefractoryTime, sample, threshold);
 
 		//Send TTL to 0 again when refractory time starts
 		if (refractoryTimeStartFlag)
@@ -278,7 +299,7 @@ void RippleDetector::detectRipples(std::vector<double> &rInRmsBuffer)
 		//milliseconds, send a TTL event and start refractory time
 		if (detected && sample > threshold && rmsSamplesCount >= numRmsSamplesThresholdTime)
 		{
-			printf("Ripple detected!\n");
+			//printf("Ripple detected!\n");
 			sendTtlEvent(rms_sample, 1);
 
 			//Start refractory time
