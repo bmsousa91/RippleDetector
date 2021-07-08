@@ -29,22 +29,22 @@ RippleDetectorUi::RippleDetectorUi()
 	
 	//Slider creation: number of standard deviations above the average to be the amplitude threshold
 	range = { 0.0, 20.0, 0.5 }; //{min, max, increment}
-	initValue = 3.0;
+	initValue = 5.0;
 	_sliderThresholdSds = createSlider("Threshold SDs", range, initValue, textBoxEditable);
 
 	//Slider creation: time threshold (milliseconds)
 	range = { 0, 5000, 1 }; //{min, max, increment}
-	initValue = 5;
+	initValue = 10;
 	_sliderThresholdTime = createSlider("Time Threshold", range, initValue, textBoxEditable);
 
 	//Slider creation: refractory time (milliseconds)
-	range = { 0, 10000, 100 }; //{min, max, increment}
-	initValue = 1000;
+	range = { 0, 10000, 10 }; //{min, max, increment}
+	initValue = 140;
 	_sliderRefractoryTime = createSlider("Refractory Time", range, initValue, textBoxEditable);
 
 	//Slider creation: number of samples on each RMS calculation block
 	range = { 1, 2048, 1 }; //{min, max, increment}
-	initValue = 128;
+	initValue = 64;
 	_sliderRmsSamples = createSlider("RMS Block Size", range, initValue, textBoxEditable);
     
 	//Create labels
