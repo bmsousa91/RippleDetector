@@ -14,6 +14,10 @@ The ripple detection algorithm works in two steps:
 
 - Detection: this is when ripples are being identified online. The RMS value of each block inside the buffer is calculated and tested against the amplitude threshold. If this value is kept above the amplitude threshold for the time window defined in the parameter "Time Threshold", ripple events are generated. After the event generation, the refractory period starts and new ripple events are detected only after this time window ends. This is the "Refractory Time" parameter, also adjustable in the plugin's GUI.
 
+Algorithm visual summary:
+
+![Ripple detection algorithm](rippleDetectionAlgorithm.png)
+
 ## Usage
 - Use this plugin after a Bandpass Filter module, filtering the signal in the ripple frequency band;
 - Use this plugin before a sink module (LFP Viewer or Pulse Pal, for instance).
