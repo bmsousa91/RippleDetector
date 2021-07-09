@@ -23,7 +23,7 @@ Visual summary of the algorithm:
 - Use this plugin before a sink module (LFP Viewer or Pulse Pal, for instance).
 - Note: the parameters for the best ripple detection scenario may vary from animal to animal. We recommend that you perform a first recording session and adjust the parameters using the File Reader source node with the recorded data.
 
-Here is a screenshot of the module being used with simulated data (you will find it in the folder "Simulation Data"):
+Here is a screenshot of the module being used with simulated data (you will find these data in the folder "Simulation Data"):
 
 ![Simulated ripple detection example](rippleDetectorExample.png)
 
