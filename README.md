@@ -19,7 +19,7 @@ The ripple detection algorithm works in two steps:
 - Use this plugin before a sink module (LFP Viewer or Pulse Pal, for instance).
 - Note: the parameters for the best ripple detection scenario may vary from animal to animal. We recommend that you perform a first recording session and adjust the parameters using the File Reader source node with the recorded data.
 
-## Plugin interface and parameters set by the user
+## Plugin's GUI and parameters set by the user
 
 ![Image of RippleDetector](rippleDetector.png)
 
