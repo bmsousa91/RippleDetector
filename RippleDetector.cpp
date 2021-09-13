@@ -4,26 +4,24 @@
 #define MINIMUM_THRESHOLD_AMP 0
 #define MINIMUM_THRESHOLD_TIME 0
 #define MINIMUM_REFRACTORY_TIME 0
-#define CALIBRATION_BUFFERS_COUNT 1000
+#define CALIBRATION_DURATION_SECONDS 20
 
 RippleDetector::RippleDetector()
     : GenericProcessor("RippleDetector")
 {
-	//Initiate variables
-    calibrationBuffers = CALIBRATION_BUFFERS_COUNT;
-    currentBuffer = 0;
+	//Init variables
+	pointsProcessed = 0;
     rmsMean = 0.0;
-    rmsStandardDeviation = 0.0;
+    rmsStd = 0.0;
     threshold = 0.0;
-    thresholdSds = 1.0f;
-	thresholdTime = 5.0f;
+    uiSdsThreshold = 1.0f;
+	uiTimeThreshold = 5.0f;
 	sampleRate = CoreServices::getGlobalSampleRate();
+	calibrationPoints = sampleRate*CALIBRATION_DURATION_SECONDS;
 
     setProcessorType(PROCESSOR_TYPE_FILTER);
     createEventChannels();
 
-	//These code lines write the input data in a file.
-	//It is useful for debugging purposes...
 	if (writeToFile) {
 		file.open("data.csv", std::ios::app);
 		file.precision(12);
@@ -49,6 +47,7 @@ void RippleDetector::createEventChannels()
     MetaDataDescriptor md(MetaDataDescriptor::CHAR, 34, "High frequency detection type", "Description of the frequency", "channelInfo.extra");
     MetaDataValue mv(md);
     pTtlEventChannel->addMetaData(md, mv);
+
 
     if (in)
     {
@@ -106,238 +105,233 @@ AudioProcessorEditor *RippleDetector::createEditor()
 
 void RippleDetector::process(AudioSampleBuffer &rInBuffer)
 {
-	//Update parameters according to user's interface
+	//Update parameters according to UI
 	const DataChannel *in = getDataChannel(0);
 
-	outputChannel = pRippleDetectorEditor->_pluginUi._outChannel - 1;
-	inputChannel = pRippleDetectorEditor->_pluginUi._inChannel - 1;
-	thresholdSds = pRippleDetectorEditor->_pluginUi._thresholdSds;
-	thresholdTime = pRippleDetectorEditor->_pluginUi._thresholdTime;
-	refractoryTime = pRippleDetectorEditor->_pluginUi._refractoryTime;
-	rmsBlockSize = pRippleDetectorEditor->_pluginUi._rmsSamples;
+	uiOutputChannel = pRippleDetectorEditor->pluginUi._outChannel - 1;
+	uiInputChannel = pRippleDetectorEditor->pluginUi._inChannel - 1;
+	uiSdsThreshold = pRippleDetectorEditor->pluginUi._thresholdSds;
+	uiTimeThreshold = pRippleDetectorEditor->pluginUi._thresholdTime;
+	uiRefractoryTime = pRippleDetectorEditor->pluginUi._refractoryTime;
+	uiRmsSamples = pRippleDetectorEditor->pluginUi._rmsSamples;
 	bufferSize = rInBuffer.getNumSamples();
-	realNumberOfSamples = GenericProcessor::getNumSamples(inputChannel);
+	realNumberOfSamples = GenericProcessor::getNumSamples(uiInputChannel);
 
-	//printf("bufferSize %d\n", bufferSize);
-	//printf("realNumberOfSamples %d\n", realNumberOfSamples);
-
-	//Sometimes it occurs that the number of input samples is 0
-	//In this case, end the process
+	// Sometimes it occurs that the number of samples is 0
+	// In this case, finishes the process
 	if (realNumberOfSamples == 0) return;
 	
-	if (pRippleDetectorEditor->_pluginUi._calibrate == true)
+	// Check recalibration
+	if (pRippleDetectorEditor->pluginUi._calibrate == true)
 	{
-		printf("Recalibrating...\n");
-		pRippleDetectorEditor->_pluginUi._calibrate = false;
+		printf("Calibrating...\n");
+		pRippleDetectorEditor->pluginUi._calibrate = false;
 		isCalibrating = true;
-		currentBuffer = 0;
+		pointsProcessed = 0;
 
 		//Reset calibration RMS array
-		calibrationRms.clear();
+		calibrationRmsValues.clear();
 	}
 
-	//Check parameter's range and adjust if necessary.
-	if (refractoryTime < MINIMUM_REFRACTORY_TIME)
-		refractoryTime = MINIMUM_REFRACTORY_TIME;
+	// Check parameters range and adjust if necessary,
+	// including updates in the plugin interface
+	if (uiRefractoryTime < MINIMUM_REFRACTORY_TIME)
+		uiRefractoryTime = MINIMUM_REFRACTORY_TIME;
 
-	if (rmsBlockSize < MINIMUM_RMS_BLOCK_SIZE)
-		rmsBlockSize = MINIMUM_RMS_BLOCK_SIZE;
+	if (uiRmsSamples < MINIMUM_RMS_BLOCK_SIZE)
+		uiRmsSamples = MINIMUM_RMS_BLOCK_SIZE;
+	if (uiRmsSamples > realNumberOfSamples)
+		uiRmsSamples = realNumberOfSamples;
 
-	if (rmsBlockSize > realNumberOfSamples) {
-		/*pRippleDetectorEditor->_pluginUi._sliderRmsSamples->setValue(realNumberOfSamples);
-		pRippleDetectorEditor->_pluginUi._rmsSamples = realNumberOfSamples;*/
-		rmsBlockSize = realNumberOfSamples;
-	}
+	if (uiSdsThreshold < MINIMUM_THRESHOLD_AMP)
+		uiSdsThreshold = MINIMUM_THRESHOLD_AMP;
 
-	if (thresholdSds < MINIMUM_THRESHOLD_AMP)
-		thresholdSds = MINIMUM_THRESHOLD_AMP;
+	if (uiTimeThreshold < MINIMUM_THRESHOLD_TIME)
+		uiTimeThreshold = MINIMUM_THRESHOLD_TIME;
 
-	if (thresholdTime < MINIMUM_THRESHOLD_TIME)
-		thresholdTime = MINIMUM_THRESHOLD_TIME;
+	// Calculate final threshold and numSamplesTimeThreshold (number of 
+	// samples equivalent to the time threshold)
+	threshold = rmsMean + uiSdsThreshold * rmsStd;
+	numSamplesTimeThreshold = ceil(sampleRate * uiTimeThreshold / 1000);
 
-	//Define threshold and numRmsSamplesThresholdTime
-	threshold = rmsMean + thresholdSds * rmsStandardDeviation;
-	numRmsSamplesThresholdTime = ceil((sampleRate*thresholdTime / 1000) / rmsBlockSize);
+	// Get raw data
+	const float *rawSamples = rInBuffer.getReadPointer(uiInputChannel);
 
-	//Get raw data
-	const float *rSamples = rInBuffer.getReadPointer(inputChannel);
+	// Guarante that the array with RMS values will be clean
+	rmsValuesArray.clear();
+	rmsSamplesArray.clear();
 
-	//Guarantee that the RMS buffer will be clean
-	localRms.clear();
-
-	//Write input data into a string, so it becomes easier to analyze.
-	//For debugging purposes only...
+	//-------------- Raw data ---------------------
 	//String completeString;
 	//for (int i = 0; i < bufferSize; i++)
 	//{
-	//	completeString += String(rSamples[i]);
+	//	completeString += String(rawSamples[i]);
 	//	completeString += " ";
 	//}
+	//---------------------------------------------
 
-	//Calculate RMS for each subblock inside buffer
-	for (int rms_index = 0; rms_index < realNumberOfSamples; rms_index += rmsBlockSize)
+	// Calculate RMS for each subblock of "uiRmsSamples" samples inside buffer
+	for (int rmsStartIdx = 0; rmsStartIdx < realNumberOfSamples; rmsStartIdx += uiRmsSamples)
 	{
-		//Get rid of extra 0-valued samples in the end of the buffer
-		if (rms_index + rmsBlockSize > realNumberOfSamples)
-		{
-			rmsEndIndex = realNumberOfSamples;
-		}
-		else {
-			rmsEndIndex = rms_index + rmsBlockSize;
-		}
+		// Get rid of analysing 0-valued samples in the end of the buffer
+		if (rmsStartIdx + uiRmsSamples > realNumberOfSamples)
+			rmsEndIdx = realNumberOfSamples;
+		else
+			rmsEndIdx = rmsStartIdx + uiRmsSamples;
+		
+		// RMS calculation (includes rmsStartIdx but excludes rmsEndIdx)
+		double rms = calculateRms(rawSamples, rmsStartIdx, rmsEndIdx);
 
-		//RMS calculation
-		double rms = calculateRms(rSamples, rms_index, rmsEndIndex);
-
-		//Calculate average between RMSs to determine baseline threshold
+		// Calculate the RMS average to further determine a baseline for the threshold
 		if (isCalibrating)
 		{
-			//Add variables to be used as a calibration basis
-			calibrationRms.push_back(rms);
+			// Variables to be used as a calibration basis
+			calibrationRmsValues.push_back(rms);
 			rmsMean += rms;
 		}
 		else
 		{
-			//Set buffer value
-			localRms.push_back(rms);
+			// Array of RMS values
+			rmsValuesArray.push_back(rms);
+			rmsSamplesArray.push_back(rmsEndIdx - rmsStartIdx);
 		}
 	}
 
-	//Check if plugin needs to stop calibration and calculate its statistics for threshold estimation
+	// Check plugin's current state: calibration or detection
 	if (isCalibrating)
 	{
-		//Printf which calibration buffer is being used
-		//printf("Ripple Detection - calibration buffer processed: %d out of %d\n", currentBuffer, calibrationBuffers);
-		calibrate();
+		pointsProcessed += realNumberOfSamples;
+
+		// Check if calibration is finished and calculate its statistics for threshold estimation
+		if (pointsProcessed >= calibrationPoints)
+		{
+			finishCalibration();
+		}
 	}
 	else
 	{
-		detectRipples(localRms);
+		detectRipples(rmsValuesArray, rmsSamplesArray);
 	}
-
-	//Count how many buffers have been processed
-	currentBuffer++;
 }
 
-//Calculate the RMS of rInBuffer data from position initIndex (included) to endIndexOpen (not included)
-double RippleDetector::calculateRms(const float *rInBuffer, int initIndex, int endIndexOpen)
+// Calculate the RMS of rInBuffer data from position initIndex (included) to endIndex (not included)
+double RippleDetector::calculateRms(const float *rawBufferData, int initIndex, int endIndex)
 {
 	double sum = 0.0;
-	for (int cnt = initIndex; cnt < endIndexOpen; cnt++)
+	for (int idx = initIndex; idx < endIndex; idx++)
 	{
-		sum += pow(rInBuffer[cnt], 2.0);
-		if(writeToFile) file << rInBuffer[cnt] << "\n";
+		sum += pow(rawBufferData[idx], 2.0);
+		// Write RMS values to a file, if enabled
+		if(writeToFile) file << rawBufferData[idx] << "\n";
 	}
 
-	return sqrt(sum / (endIndexOpen - initIndex));
+	return sqrt(sum / (endIndex - initIndex));
 }
 
-void RippleDetector::calibrate()
+void RippleDetector::finishCalibration()
 {
-	if (currentBuffer == calibrationBuffers)
-	{
-		printf("Calibration finished...\n");
+		printf("Calibration finished!\n");
 
-		//Set flag to false to end the calibration period
+		// Set flag to false to end the calibration period
 		isCalibrating = false;
 
-		//Calculate statistics
-		rmsMean = rmsMean / (double)calibrationRms.size();
+		// Calculate RMS mean
+		rmsMean = rmsMean / (double)calibrationRmsValues.size();
 
-		//Calculate standard deviation
-		for (unsigned int rms_sample = 0; rms_sample < calibrationRms.size(); rms_sample++)
+		// Calculate standard deviation
+		for (unsigned int idx = 0; idx < calibrationRmsValues.size(); idx++)
 		{
-			rmsStandardDeviation += pow(calibrationRms[rms_sample] - rmsMean, 2.0);
+			rmsStd += pow(calibrationRmsValues[idx] - rmsMean, 2.0);
 		}
-		rmsStandardDeviation = sqrt(rmsStandardDeviation / ((double)calibrationRms.size() - 1.0));
+		rmsStd = sqrt(rmsStd / ((double)calibrationRmsValues.size() - 1.0));
 
-		threshold = rmsMean + thresholdSds * rmsStandardDeviation;
+		threshold = rmsMean + uiSdsThreshold * rmsStd;
 
-		//Printf calculated statistics
-		printf(
-			"RMS Mean: %f\n"
-			"RMS Deviation: %f\n"
-			"Threshold amplifier %f\n"
-			"Calculated RMS Threshold: %f\n",
-			rmsMean, rmsStandardDeviation, thresholdSds, threshold);
-	}
+		// Print calculated statistics
+		printf("RMS Mean: %f\n"
+			"RMS Std: %f\n"
+			"Threshold amplifier: %f\n"
+			"Final RMS Threshold: %f\n",
+			rmsMean, rmsStd, uiSdsThreshold, threshold);
+	
 }
 
-void RippleDetector::detectRipples(std::vector<double> &rInRmsBuffer)
+void RippleDetector::detectRipples(std::vector<double>& rmsValuesArr, std::vector<int>& rmsSamplesArr)
 {
-	//Iterate over RMS sample blocks inside buffer
-    for (unsigned int rms_sample = 0; rms_sample < rInRmsBuffer.size(); rms_sample++)
-    {
-        double sample = rInRmsBuffer[rms_sample];
 
-		//Detect the first time the sample is above the amplitude threshold
-		if (detectionEnabled && sample > threshold)
+	// Iterate over RMS blocks inside buffer
+    for (unsigned int rmsIdx = 0; rmsIdx < rmsValuesArr.size(); rmsIdx++)
+    {
+        double rms = rmsValuesArr[rmsIdx];
+		int samples = rmsSamplesArr[rmsIdx];
+		samplesCount += samples;
+
+
+		// Detect the first time the RMS is above the amplitude threshold
+		if (detectionEnabled && rms > threshold)
 		{
-			detected = true;
+			detectionOnProgress = true;
 			detectionEnabled = false;
-			//Start the time threshold blocks counting
-			rmsSamplesCount = 0;
+			// Start counting the samples equivalent to the time threshold
+			samplesCount = 0;
 		}
 
-		//If RMS drops below threshold, reset the algorithm
-		if (detected && sample <= threshold) {
-			detected = false;
+		// If RMS drops below threshold, reset the algorithm
+		if (detectionOnProgress && rms <= threshold) {
+			detectionOnProgress = false;
 			detectionEnabled = true;
 			continue;
 		}
 
-		//printf("detected %d, can_detect %d, refractory %d, sample %f, thresh %f\n", detected, detectionEnabled, onRefractoryTime, sample, threshold);
+		//printf("det %d, detOnProg %d, refrac %d, rms %f, thresh %f, samp %d\n", detectionEnabled, detectionOnProgress, onRefractoryTime, rms, threshold, samplesCount);
 
-		//Send TTL to 0 again when refractory time starts
+		// Send TTL to 0 again when refractory time starts
 		if (refractoryTimeStartFlag)
 		{
-			sendTtlEvent(rms_sample, 0);
+			sendTtlEvent(rmsIdx, 0);
 			refractoryTimeStartFlag = false;
 		}
 
-		//If RMS detection flag persists for more than "thresholdTime"
-		//milliseconds, send a TTL event and start refractory time
-		if (detected && sample > threshold && rmsSamplesCount >= numRmsSamplesThresholdTime)
+		// If RMS detection flag persists for more than "uiTimeThreshold" milliseconds
+		// (converted to numSamplesTimeThreshold), send a TTL event and start refractory time
+		if (detectionOnProgress && rms > threshold && samplesCount >= numSamplesTimeThreshold)
 		{
-			//printf("Ripple detected!\n");
-			sendTtlEvent(rms_sample, 1);
+			printf("Ripple detected!\n");
+			sendTtlEvent(rmsIdx, 1);
 
-			//Start refractory time
+			// Start refractory time
 			onRefractoryTime = true;
 			refractoryTimeStartFlag = true;
 			refractoryTimeStart = std::chrono::duration_cast< std::chrono::milliseconds >(std::chrono::system_clock::now().time_since_epoch());
 
-			//Reset detection flag and time threshold window
-			detected = false;
-			rmsSamplesCount = 0;
+			// Reset detection flag and time threshold window
+			detectionOnProgress = false;
+			samplesCount = 0;
 		}
 
-		//Check refractory time to enable detection again
+		// Check the refractory time to enable detection again
 		timeNow = std::chrono::duration_cast< std::chrono::milliseconds >(std::chrono::system_clock::now().time_since_epoch());
-		if (!refractoryTimeStartFlag && onRefractoryTime && (timeNow.count() - refractoryTimeStart.count() >= refractoryTime))
+		if (!refractoryTimeStartFlag && onRefractoryTime && (timeNow.count() - refractoryTimeStart.count() >= uiRefractoryTime))
 		{
 			onRefractoryTime = false;
 			detectionEnabled = true;
 			refractoryTimeStart = timeNow;
 		}
-
-		//Update RMS samples counting
-		rmsSamplesCount++;
     }
 }
 
 void RippleDetector::sendTtlEvent(int rmsIndex, int val)
 {
-	//Send event only when the animal is not moving
+	// Send event only when the animal is not moving
 	if (!isPluginEnabled)
 		return;
 
-	//Timestamp for this sample
-	uint64 time_stamp = getTimestamp(inputChannel) + rmsIndex;
+	// Timestamp for this sample
+	uint64 time_stamp = getTimestamp(uiInputChannel) + rmsIndex;
 
 	uint8 ttlData;
-	uint8 output_event_channel = outputChannel;
-	ttlData = val << outputChannel;
+	uint8 output_event_channel = uiOutputChannel;
+	ttlData = val << uiOutputChannel;
 	TTLEventPtr ttl = TTLEvent::createTTLEvent(pTtlEventChannel, time_stamp, &ttlData, sizeof(uint8), output_event_channel);
 	addEvent(pTtlEventChannel, ttl, rmsIndex);
 }

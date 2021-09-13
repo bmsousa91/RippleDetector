@@ -60,7 +60,7 @@ public:
     RippleDetectorEditor(GenericProcessor *rInParentNode, bool useDefaultParameterEditors);
     void updateSettings() override;
     void resized() override;
-    RippleDetectorUi _pluginUi;
+    RippleDetectorUi pluginUi;
 
 private:
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(RippleDetectorEditor);

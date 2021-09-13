@@ -44,7 +44,7 @@ RippleDetectorUi::RippleDetectorUi()
 
 	//Slider creation: number of samples on each RMS calculation block
 	range = { 1, 2048, 1 }; //{min, max, increment}
-	initValue = 64;
+	initValue = 128;
 	_sliderRmsSamples = createSlider("RMS Block Size", range, initValue, textBoxEditable);
     
 	//Create labels
@@ -214,7 +214,7 @@ static int getNextX(Component *rInReference)
 RippleDetectorEditor::RippleDetectorEditor(GenericProcessor *pInParentNode, bool useDefaultParameterEditors)
     : GenericEditor(pInParentNode, useDefaultParameterEditors)
 {
-    addAndMakeVisible(&_pluginUi);
+    addAndMakeVisible(&pluginUi);
     const int plugin_witdh = 480;
     setDesiredWidth(plugin_witdh);
 }
@@ -228,7 +228,7 @@ RippleDetectorEditor::~RippleDetectorEditor()
 void RippleDetectorEditor::updateSettings()
 {
     int channelCount = getProcessor()->getNumInputs();
-    _pluginUi.updateInputChannels(channelCount);
+    pluginUi.updateInputChannels(channelCount);
 }
 
 //Resize editor
@@ -242,5 +242,5 @@ void RippleDetectorEditor::resized()
     const int height = 200;
 
     //Set the position and bounds of this group of elements inside the plugin UI
-    _pluginUi.setBounds(x_pos_initial, y_pos_inttial, width, height);
+    pluginUi.setBounds(x_pos_initial, y_pos_inttial, width, height);
 }

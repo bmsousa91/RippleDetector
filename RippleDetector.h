@@ -25,9 +25,9 @@ public:
 	void sendTtlEvent(int rmsIndex, int val);
 
     //Ripple-specific functions
-    void calibrate();
-    void detectRipples(std::vector<double> &rInRmsBuffer);
-    double calculateRms(const float *rInBuffer, int initIndex, int endIndexOpen);
+    void finishCalibration();
+    void detectRipples(std::vector<double>& rmsValuesArr, std::vector<int>& rmsSamplesArr);
+    double calculateRms(const float* rawBufferData, int initIndex, int endIndexOpen);
 
 	//Time related variables
 	float sampleRate;
@@ -35,36 +35,39 @@ public:
 	std::chrono::milliseconds timeNow;
 
 	//Interface corresponding parameters
-	int outputChannel;				//Output channel
-	int inputChannel;				//Input channel
-	double thresholdSds;			//Number of standard deviations above average
-	double thresholdTime;			//Time threshold in milliseconds
-	int numRmsSamplesThresholdTime;	//Number of RMS samples corresponding to time threshold according to the sample rate
+	int uiOutputChannel;				//Output channel
+	int uiInputChannel;				//Input channel
+	double uiSdsThreshold;			//Number of standard deviations above average
+	double uiTimeThreshold;			//Time threshold in milliseconds
+	//int numRmsSamplesTimeThreshold;	//Number of RMS samples corresponding to time threshold according to the sample rate
+	int numSamplesTimeThreshold;	//Number of samples corresponding to time threshold according to the sample rate
 	int rmsSamplesCount;			//Counting of RMS samples corresponding to time threshold
-	unsigned int refractoryTime;	//Refractory time in milliseconds
-	int rmsBlockSize;				//Number of samples in each buffer subdivision for calculating the RMS
+	int samplesCount;			//Counting of RMS samples corresponding to time threshold
+	unsigned int uiRefractoryTime;	//Refractory time in milliseconds
+	int uiRmsSamples;				//Number of samples in each buffer subdivision for calculating the RMS
 	int bufferSize;					//Number of pre-allocated samples in each buffer
 	int realNumberOfSamples;		//Real number of samples in the buffer (usually less than buffer size, at least for File Reader tests)
-	int rmsEndIndex;				//The end index for RMS calculation window
+	int rmsEndIdx;				//The end index for RMS calculation window
 
     //RMS statistics
-    std::vector<double> localRms;
-    std::vector<double> calibrationRms;
+    std::vector<double> rmsValuesArray;
+	std::vector<int> rmsSamplesArray;
+    std::vector<double> calibrationRmsValues;
     double rmsMean;
-    double rmsStandardDeviation;
+    double rmsStd;
 	double threshold;				//Final threshold calculation
 
     //Buffer control
-    int currentBuffer;
-    int calibrationBuffers;
+	int pointsProcessed;
+	int calibrationPoints;
 
     //Event flags
 	bool isCalibrating { true };
 	bool isPluginEnabled { true };
 	bool onRefractoryTime { false };
 	bool refractoryTimeStartFlag { false };
-	bool detected { false };
-	bool detectionEnabled { true };
+	bool detectionOnProgress{ false };			// Indicates if the detection process started (there are points above the amplitude threshold)
+	bool detectionEnabled { true };				// Indicates if a new detection is enabled
     bool movementDetected { false };
 
     //TTL event channel
