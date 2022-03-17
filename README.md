@@ -25,11 +25,11 @@ Visual summary of the algorithm:
 
 Here is a screenshot of the module being used with simulated data (you will find these data in the folder "Simulation Data"):
 
-![Simulated ripple detection example](rippleDetectorExample.png)
+![Simulated ripple detection example](Figures/rippleDetectorExample.png)
 
 ## Plugin's GUI and parameters set by the user
 
-![Image of RippleDetector](rippleDetector.png)
+![Image of RippleDetector](Figures/rippleDetector.png)
 
 - Input channel: the number of the input channel from which ripple data will be processed;
 - Output channel: the number of the output channel where detection events are marked;
