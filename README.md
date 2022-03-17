@@ -24,7 +24,7 @@ Below is a screenshot of the module being used with real data (hc-18 dataset ava
 - Refr. Time (ms): refractory time - period after each detection event in which new ripples are not detected;
 - RMS Samp.: RMS samples - number of samples to calculate the RMS value;
 
-- EMG/ACC: electromyogram or accelerometer input. 
+- EMG/ACC: electromyogram or accelerometer data input channel for movement monitoring. If "-" is selected, the mechanism of event blockage based on movement detection is disabled and ripples are not silenced. When the auxiliary channels are enabled (via the Rhythm FPGA module), the "Accel." option appears in the list of available channels. If selected, the RMS values are calculated over the magnitude of the acceleration vector. Any other option selected is treated as it was an EMG channel (see the section "Ripple detection algorithm").
 
 - Button "Recalibrate": starts the calibration process again, calculating a new amplitude threshold;
 
