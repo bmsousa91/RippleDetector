@@ -6,12 +6,12 @@ The file continuous.dat in the directory "continuous/rippleSimData/" includes si
 - Fast ripples: events in the 250Hz-500Hz frequency band;
 - Spike artefacts: sudden peaks with low duration and high amplitude.
 
-![Image of SimulationData](simulationData.png)
+![Image of SimulationData](Figures/simulatedData.png)
 
 ## How to use it
 Open the simData.oebin file in the File Reader module and, after that, make sure that "rippleSimData" is selected in the dropdown menu. Don't forget to keep the "continuous" folder and all of its components in the same directory of the simData.oebin file. An example of how to use it:
 
-![Image of ProcessChain](processChain.png)
+![Image of ProcessChain](Figures/processChain.png)
 
 ## References for the synthetic data
 
