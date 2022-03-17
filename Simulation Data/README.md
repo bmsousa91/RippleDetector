@@ -6,6 +6,8 @@ The file continuous.dat in the directory "continuous/rippleSimData/" includes si
 - Fast ripples: events in the 250Hz-500Hz frequency band;
 - Spike artefacts: sudden peaks with low duration and high amplitude.
 
+A segment of the simulated data:
+
 ![Image of SimulationData](Figures/simulatedData.png)
 
 ## How to use it
