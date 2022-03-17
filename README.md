@@ -17,12 +17,14 @@ Below is a screenshot of the module being used with real data (hc-18 dataset ava
 
 ![Image of RippleDetector](Figures/rippleDetector.png)
 
-- Input channel: the number of the input channel from which ripple data will be processed;
-- Output channel: the number of the output channel where detection events are marked;
-- SDs: number of standard deviations above the average to compose the amplitude threshold;
-- Time Threshold (ms): the RMS value must be above the amplitude threshold for a minimum of X milliseconds to detect a ripple. X is the value this parameter represents; 
-- Refractory Time (ms): represents a time window just after ripple detection in which new ripples are unable to be detected;
-- RMS Samples: number of samples inside each buffer sub-block to calculate the RMS value.
+- Input: input channel from which ripple data will be processed;
+- Output: output TTL channel where detection events are marked;
+- SD: number of RMS standard deviations above the mean to calculate the amplitude threshold;
+- Time Thr. (ms): time threshold - the minimum period during which the RMS values must be above the amplitude threshold for ripples to be detected; 
+- Refr. Time (ms): refractory time - period after each detection event in which new ripples are not detected;
+- RMS Samp.: RMS samples - number of samples to calculate the RMS value;
+
+- EMG/ACC: electromyogram or accelerometer input. 
 
 - Button "Recalibrate": starts the calibration process again, calculating a new amplitude threshold;
 
@@ -31,11 +33,11 @@ Below is a screenshot of the module being used with real data (hc-18 dataset ava
 
 ## Ripple detection algorithm
 The ripple detection algorithm works in two steps:
-- Calibration: this is the initial stage when the threshold for ripple detection is calculated. The calibration period corresponds to the first 20 seconds of recording. During this period, the incoming filtered data in the ripple frequency band is divided into blocks of N samples, where N is the "RMS Samples" value set in the plugin's GUI. The RMS value is calculated for each block, so we have a total of (20 * sampleRate / N) RMS points. The RMS mean and standard deviation (standardDeviation) for the whole calibration period are calculated and we have the final amplitude threshold (amplitudeThreshold) specified in terms of standard deviations above the mean:
+- Calibration: this is the initial stage when the threshold for ripple detection is calculated. The calibration period corresponds to the first 20 seconds of recording. During this period, the incoming filtered data in the ripple frequency band is divided into blocks of N samples, where N is the "RMS Samp." value set in the plugin's GUI. The RMS value is calculated for each block, so we have a total of (20 * sampleRate / N) RMS points. The RMS mean (RMS_mean) and standard deviation (RMS_standardDeviation) for the whole calibration period are calculated and we have the final amplitude threshold (amplitudeThreshold) specified in terms of standard deviations above the mean:
 
-      amplitudeThreshold = RMS_mean + "SDS" * RMS_standardDeviation
+      amplitudeThreshold = RMS_mean + "SD" * RMS_standardDeviation
 
-   where "SDS" is the number of standard deviations above the mean. This parameter can be set in the plugin's GUI.
+   where "SD" is the number of standard deviations above the mean. This parameter can be set in the plugin's GUI.
 
 - Detection: this is when ripples are identified online. The RMS value of each block is calculated and tested against the amplitude threshold. If this value is kept above the amplitude threshold for the time window defined by the parameter "Time Threshold", ripple events are generated. After an event is raised, the detection of new ripple events is blocked for "Refractory Time" milliseconds. This parameter can be also adjusted in the plugin's GUI.
 
