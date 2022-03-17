@@ -1,5 +1,5 @@
-# Ripple Detector - Plugin for Open Ephys
-Open Ephys plugin for ripple detection.
+# Ripple Detector plugin for Open Ephys
+Open Ephys plugin for ripple detection. It contains an embedded mechanism based on EMG or accelerometer data that blocks ripple events when movement is detected.
 
 ## Installation
 First, you will have to download the Open Ephys (OE) GUI source code and compile it (https://open-ephys.github.io/gui-docs/Developer-Guide/Compiling-the-GUI.html). The second step is to create the build files for the plugin and compile it. Again, the official OE website provides all the necessary instructions (https://open-ephys.github.io/gui-docs/Developer-Guide/Compiling-plugins.html). For those using Windows 10, I wrote my own instructions for compiling the OE GUI and the RippleDetector plugin using Visual Studio 2019 Community. You will find these instructions in the "How to install OE and RippleDetector from source code - Win10_VS.pdf" file. Hope it helps!  
@@ -7,7 +7,7 @@ First, you will have to download the Open Ephys (OE) GUI source code and compile
 ## Usage
 - Use this plugin after a Bandpass Filter module, filtering the signal in the ripple frequency band;
 - Use this plugin before a sink module (LFP Viewer, Recording Node or Pulse Pal, for instance).
-- Note: the parameters for the best ripple detection performance may vary according to the recording setup, noise level, electrode type, implant quality, and even from animal to animal. We recommend that you perform a first recording session to find the optimal parameters using the File Reader source node with the recorded data.
+- Note: the parameters for the best ripple detection performance may vary according to the recording setup, noise level, electrode type, implant quality, and even between animals. We recommend that you perform a first recording session to find the optimal parameters using the File Reader source node with the recorded data.
 
 Below is a screenshot of the module being used with real data (hc-18 dataset available at CRCNS.org – Drieu, Todorova and Zugaro, 2018a; Drieu, Todorova and Zugaro, 2018b). We also created synthetic ripple data to perform preliminary tests of the plugin (you will find these data in the folder "Simulation Data").
 
