@@ -7,7 +7,7 @@ First, you will have to download the Open Ephys (OE) GUI source code and compile
 ## Usage
 - Use this plugin after a Bandpass Filter module, filtering the signal in the ripple frequency band;
 - Use this plugin before a sink module (LFP Viewer, Recording Node or Pulse Pal, for instance).
-- Note: the parameters for the best ripple detection performance may vary according to the recording setup, noise level, electrode type, implant quality, and even from animal to animal. We recommend that you perform a first recording session and to find the optimal parameters using the File Reader source node with the recorded data.
+- Note: the parameters for the best ripple detection performance may vary according to the recording setup, noise level, electrode type, implant quality, and even from animal to animal. We recommend that you perform a first recording session to find the optimal parameters using the File Reader source node with the recorded data.
 
 Below is a screenshot of the module being used with real data (hc-18 dataset available at CRCNS.org – Drieu, Todorova and Zugaro, 2018a; Drieu, Todorova and Zugaro, 2018b). We also created synthetic ripple data to perform preliminary tests of the plugin (you will find these data in the folder "Simulation Data").
 
