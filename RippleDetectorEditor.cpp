@@ -67,11 +67,11 @@ RippleDetectorEditor::RippleDetectorEditor(GenericProcessor* parentNode, bool us
 
 	// Input box: EMG/ACC minimum time without movement to enable detection
 	_inputBoxMinTimeWoMov = createInputBox("emg/acc min time wo movement", "Minimum time steady (in milliseconds). The minimum time below the EMG/ACC threshold to enable detection");
-	_inputBoxMinTimeWoMov->setText("3000", sendNotification);
+	_inputBoxMinTimeWoMov->setText("5000", sendNotification);
 
 	// Input box: EMG/ACC minimum time with movement to disable detection
 	_inputBoxMinTimeWMov = createInputBox("emg/acc min time w movement", "Minimum time with movement (in milliseconds). The minimum time above the EMG/ACC threshold to disable detection");
-	_inputBoxMinTimeWMov->setText("5", sendNotification);
+	_inputBoxMinTimeWMov->setText("10", sendNotification);
 
 	// ------------------------
 	// Create labels
