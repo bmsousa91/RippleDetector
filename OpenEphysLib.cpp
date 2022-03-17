@@ -9,6 +9,8 @@
 #define EXPORT __attribute__((visibility("default")))
 #endif
 
+using namespace Plugin;
+
 extern "C" EXPORT void getLibInfo(Plugin::LibraryInfo *info)
 {
 	info->apiVersion = PLUGIN_API_VER;

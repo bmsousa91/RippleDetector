@@ -3,64 +3,83 @@
 
 #include <EditorHeaders.h> 
 #include <sstream>
+#include <iomanip>
 
-class RippleDetectorUi : public Component, public ButtonListener, public SliderListener, public ComboBoxListener
+class RippleDetectorEditor : public GenericEditor, 
+                         public Button::Listener, 
+                         public ComboBox::Listener, 
+                         public Label::Listener
 {
 public:
-	RippleDetectorUi();
-    ~RippleDetectorUi();
+    RippleDetectorEditor(GenericProcessor* parentNode, bool useDefaultParameterEditors);
+    virtual ~RippleDetectorEditor();
+
     void updateInputChannels(int channelCount);
 	void updateOutputChannels(int channelCount);
-	Slider* createSlider(String sliderName, std::vector<double> range, double initValue, bool textBoxEditable);
-	Label* createLabel(String labelText);
-    void updateSettings();
-    void resized() override;
-    void paint(Graphics &rInGraphics) override;
+    void updateMovChannels(int channelCount);
+    void updateMovOutputChannels(int channelCount);
+
+	Label* createLabel(String labelText, Justification just);
+    Label* createInputBox(String componentName, String tooltipText);
+    ScopedPointer<ComboBox> createComboBox(String tooltipText);
+
     void buttonClicked(Button *pInButtonClicked) override;
-    void sliderValueChanged(Slider *pInSliderChanged) override;
     void comboBoxChanged(ComboBox *pInComboBoxChanged) override;
+    void labelTextChanged(Label* pLabel) override;
+    void setInputBoxStatus(Label* pInputBox, bool enabled);
+    double adjustAndGetValueFromText(const String& text);
+    void updateSettings() override;
+    void setComponentsPositions();
 
-	//Interface objects
-    LookAndFeel_V2 *_defaultLookAndFeel;
-    ComboBox *_comboChannelSelection;
-    ComboBox *_comboOutChannelSelection;
-    Slider *_sliderThresholdSds;
-	Slider *_sliderThresholdTime;
-    Slider *_sliderRefractoryTime;
-    Slider *_sliderRmsSamples;
-    TextButton *_buttonCalibrate;
+    int _noMovChannelId = 999;
+    int _accelChannelId = 1111;
 
-    //Labels
+	// Interface objects
+    ScopedPointer<ComboBox> _comboInChannelSelection;
+    ScopedPointer<ComboBox> _comboOutChannelSelection;
+    ScopedPointer<ComboBox> _comboMovChannelSelection;
+    ScopedPointer<ComboBox> _comboMovOutChannelSelection;
+    Label* _inputBoxSds;
+    Label* _inputBoxTimeThreshold;
+    Label* _inputBoxRefractory;
+    Label* _inputBoxRmsSamples;
+    Label* _inputBoxMovSds;
+    Label* _inputBoxMinTimeWoMov;
+    Label* _inputBoxMinTimeWMov;
+    UtilityButton* _buttonCalibrate;
+
+    // Labels
     Label *_labelInputChannel;
-    Label *_labelOutChannel;
-    Label *_labelThresholdSds;
-	Label *_labelThresholdTime;
+    Label *_labelOutputChannel;
+    Label* _labelMovChannel;
+    Label* _labelMovOutputChannel;
+    Label * _labelSds;
+	Label *_labelTimeThreshold;
     Label *_labelRefractoryTime;
     Label *_labelRmsSamples;
+    Label* _labelMovSds;
+    Label* _labelMinTimeWoMov;
+    Label* _labelMinTimeWMov;
 
-    //Facade
-    int _channelCount;
+    // Facade
     int _inChannel;
     int _outChannel;
-    bool _calibrate;
-    double _thresholdSds;
-	double _thresholdTime;
+    int _movChannel;
+    int _movOutChannel;
+    std::vector<int> _accChannels;
+
+    double _rippleSds;
+	int _timeThreshold;
     int _refractoryTime;
     int _rmsSamples;
+    double _movSds;
+    int _minTimeWoMov;
+    int _minTimeWMov;
 
-private:
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(RippleDetectorUi);
-};
-
-class RippleDetectorEditor : public GenericEditor
-{
-public:
-    RippleDetectorEditor();
-    virtual ~RippleDetectorEditor();
-    RippleDetectorEditor(GenericProcessor *rInParentNode, bool useDefaultParameterEditors);
-    void updateSettings() override;
-    void resized() override;
-    RippleDetectorUi pluginUi;
+    bool _calibrate;
+    bool _movChannChanged{ false };
+    bool _movSwitchEnabled{ false };
+    bool _accelerometerSelected{ false };
 
 private:
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(RippleDetectorEditor);
@@ -68,5 +87,6 @@ private:
 
 static int getNextY(Component *rInReference);
 static int getNextX(Component *rInReference);
+static double setDecimalPlaces(double value, int places);
 
 #endif
