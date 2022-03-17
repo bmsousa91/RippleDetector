@@ -24,12 +24,13 @@ Below is a screenshot of the module being used with real data (hc-18 dataset ava
 - Refr. Time (ms): refractory time - period after each detection event in which new ripples are not detected;
 - RMS Samp.: RMS samples - number of samples to calculate the RMS value;
 
-- EMG/ACC: electromyogram or accelerometer data input channel for movement monitoring. If "-" is selected, the mechanism of event blockage based on movement detection is disabled and ripples are not silenced. When the auxiliary channels are enabled (via the Rhythm FPGA module), the "Accel." option appears in the list of available channels. If selected, the RMS values are calculated over the magnitude of the acceleration vector. Any other option selected is treated as it was an EMG channel (see the section "Ripple detection algorithm").
+- EMG/ACC: electromyogram or accelerometer data input channel for movement monitoring. If "-" is selected, the mechanism of event blockage based on movement detection is disabled and ripples are not silenced. When the auxiliary channels are enabled (via the Rhythm FPGA module), the "Accel." option appears in the list of available channels. If selected, the RMS values are calculated over the magnitude of the acceleration vector. Any other option selected is treated as it was an EMG channel (see the section "Ripple detection algorithm");
+- Mov. Out: movement output - output TTL channel that indicates the period when ripple detection is silenced by movement (0: events not blocked, 1: events blocked);
+- EMG/ACC SD: number of RMS standard deviations above the mean to calculate the amplitude threshold for movement detection based on EMG or accelerometer;
+- Min Time St (ms): minimum time steady - minimum period of immobility (RMS below the amplitude threshold) required to enable ripple detection again after movement is detected;
+- Min Time Mov (ms): minimum time of movement - the minimum period during which the RMS values of EMG/accelerometer must be above the corresponding amplitude threshold for movement detection (and ripple silencing);
 
-- Button "Recalibrate": starts the calibration process again, calculating a new amplitude threshold;
-
-
-
+- Button "Calibrate": recalculates the calibration parameters (RMS mean and standard deviation for both the ripple and movement data);
 
 ## Ripple detection algorithm
 The ripple detection algorithm works in two steps:
