@@ -6,7 +6,7 @@ First, you will have to download the Open Ephys (OE) GUI source code and compile
 
 ## Usage
 - Use this plugin after a Bandpass Filter module, filtering the signal in the ripple frequency band;
-- Use this plugin before a sink module (LFP Viewer, Recording Node or Pulse Pal, for instance).
+- Use this plugin before a sink module (LFP Viewer, Recording Node, or Pulse Pal, for instance).
 - Note: the parameters for the best ripple detection performance may vary according to the recording setup, noise level, electrode type, implant quality, and even between animals. We recommend that you perform a first recording session to find the optimal parameters using the File Reader source node with the recorded data.
 
 Below is a screenshot of the module being used with real data (hc-18 dataset available at CRCNS.org – Drieu, Todorova and Zugaro, 2018a; Drieu, Todorova and Zugaro, 2018b). We also created synthetic ripple data to perform preliminary tests of the plugin (you will find these data in the folder "Simulation Data").
@@ -24,7 +24,7 @@ Below is a screenshot of the module being used with real data (hc-18 dataset ava
 - Refr. Time (ms): refractory time - period after each detection event in which new ripples are not detected;
 - RMS Samp.: RMS samples - number of samples to calculate the RMS value;
 
-- EMG/ACC: electromyogram or accelerometer data input channel for movement monitoring. If "-" is selected, the mechanism of event blockage based on movement detection is disabled and ripples are not silenced. When the auxiliary channels are enabled (via the Rhythm FPGA module), the "Accel." option appears in the list of available channels. If selected, the RMS values are calculated over the magnitude of the acceleration vector. Any other option selected is treated as it was an EMG channel (see the section "Ripple detection algorithm");
+- EMG/ACC: electromyogram or accelerometer data input channel for movement monitoring. If "-" is selected, the mechanism of event blockage based on movement detection is disabled and ripples are not silenced. When the auxiliary channels are enabled (via the Rhythm FPGA module), the "Accel." option appears in the list of available inputs as a virtual channel. If selected, the RMS values are calculated over the magnitude of the acceleration vector. Any other option selected is treated as it was an EMG channel (see the section "Ripple detection algorithm");
 - Mov. Out: movement output - output TTL channel that indicates the period when ripple detection is silenced by movement (0: events not blocked, 1: events blocked);
 - EMG/ACC SD: number of RMS standard deviations above the mean to calculate the amplitude threshold for movement detection based on EMG or accelerometer;
 - Min Time St (ms): minimum time steady - minimum period of immobility (RMS below the amplitude threshold) required to enable ripple detection again after movement is detected;
@@ -40,9 +40,9 @@ The ripple detection algorithm works in two steps:
 
    where "SD" is the number of standard deviations above the mean. This parameter can be set in the plugin's GUI.
 
-- Detection: this is when ripples are identified online. The RMS value of each block is calculated and tested against the amplitude threshold. If this value is kept above the amplitude threshold for the time window defined by the parameter "Time Threshold", ripple events are generated. After an event is raised, the detection of new ripple events is blocked for "Refractory Time" milliseconds. This parameter can be also adjusted in the plugin's GUI.
+- Detection: this is when ripples are identified online. The RMS value of each block is calculated and tested against the amplitude threshold. If this value is kept above the amplitude threshold for the minimum time period defined by the parameter "Time Thr.", ripple events are generated. After an event is raised, the detection of new ripple events is disabled for "Refr. Time" milliseconds. This parameter can be also adjusted in the plugin's GUI. If the user selects one option in the "EMG/ACC" comboBox, ripple events are not raised when movement is detected.
 
-Visual summary of the algorithm:
+Summary of the algorithm:
 
 ![Ripple detection algorithm](Figures/rippleDetectionAlgorithm.png)
 
