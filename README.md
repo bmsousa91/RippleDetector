@@ -13,7 +13,7 @@ Below is a screenshot of the module being used with real data (hc-18 dataset ava
 
 ![Simulated ripple detection example](Figures/rippleDetectorExample.png)
 
-## Plugin's GUI and parameters set by the user
+## Ripple Detector GUI
 
 ![Image of RippleDetector](Figures/rippleDetector.png)
 
