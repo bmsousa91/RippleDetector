@@ -17,6 +17,8 @@ Open the simData.oebin file in the File Reader module and, after that, make sure
 
 ## References for the synthetic data
 
-OLIVEIRA, E. F.; FERNÁNDEZ RUIZ, A. ; BERALDO, I. J. D. ; BECKER, G. F. ; SILVA, R. B. D. ; SORIANO, D. C. ; BUZSAKI, G. ; LOPES-AGUIAR, C. . Improved ripple detection for real-time and closed-loop manipulation of memory in neural systems. In: Society for Neuroscience Meeting, 2018, San Diego. Society for Neuroscience Meeting, 2018.
+SOUSA, B.M.; OLIVEIRA, E.F.; BERALDO, I.J.S.; POLANCZYK, R.S.; LEITE, J.P.; LOPES-AGUIAR, C. An open-source, ready-to-use and validated ripple detector plugin for the Open Ephys GUI. BioRxiv. [Preprint]. April 05, 2022. https://doi.org/10.1101/2022.04.01.486754
+
+OLIVEIRA, E. F.; FERNÁNDEZ RUIZ, A. ; BERALDO, I. J. D. ; BECKER, G. F. ; SILVA, R. B. D. ; SORIANO, D. C. ; BUZSAKI, G. ; LOPES-AGUIAR, C. Improved ripple detection for real-time and closed-loop manipulation of memory in neural systems. In: Society for Neuroscience Meeting, 2018, San Diego. Society for Neuroscience Meeting, 2018.
 
 LOPES-AGUIAR, C.; OLIVEIRA, E.F.; ZACHARIAS, L.R; PERES, L.B.; DIBA, K., SORIANO, D.C.; LEITE, J.P. Validation and biological relevance of a real-time ripple detection module for open-ephys. Poster presentation: Society for Neuroscience Annual Meeting, 2016 – San Diego, USA.
