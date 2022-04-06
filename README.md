@@ -48,7 +48,7 @@ Summary of the algorithm:
 
 ## Citation and more info
 
-If you want to cite the ripple detector or know more about it, please refer to the preprint below.
+If you want to cite the ripple detector or know more about it, please refer to the preprint below:
 
 https://www.biorxiv.org/content/10.1101/2022.04.01.486754v1
 
