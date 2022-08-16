@@ -48,15 +48,13 @@ Summary of the algorithm:
 
 ## Citation and more info
 
-If you want to cite the ripple detector or know more about it, please refer to the preprint below:
+If you want to cite the ripple detector or know more about it, please refer to the paper below:
 
-https://www.biorxiv.org/content/10.1101/2022.04.01.486754v1
+https://iopscience.iop.org/article/10.1088/1741-2552/ac857b
 
 ## References
 
 Drieu, C., Todorova, R., & Zugaro, M. (2018a). Nested sequences of hippocampal assemblies during behavior support subsequent sleep replay. Science (New York, N.Y.), 362(6415), 675–679. https://doi.org/10.1126/science.aat2952
 
 Drieu, C., Todorova, R., & Zugaro, M. (2018b). Bilateral recordings from dorsal hippocampal area CA1 from rats transported on a model train and sleeping. CRCNS.org. http://dx.doi.org/10.6080/K0Z899MM.
-
-
 
