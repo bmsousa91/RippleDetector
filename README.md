@@ -11,11 +11,11 @@ First, you will have to download the Open Ephys (OE) GUI source code and compile
 
 Below is a screenshot of the module being used with real data (hc-18 dataset available at CRCNS.org – Drieu, Todorova and Zugaro, 2018a; Drieu, Todorova and Zugaro, 2018b). We also created synthetic ripple data to perform preliminary tests of the plugin (you will find these data in the folder "Simulation Data").
 
-![Simulated ripple detection example](Figures/rippleDetectorExample.png)
+![Simulated ripple detection example](Resources/Figures/rippleDetectorExample.png)
 
 ## Ripple Detector GUI
 
-![Image of RippleDetector](Figures/rippleDetector.png)
+![Image of RippleDetector](Resources/Figures/rippleDetector.png)
 
 - Input: input channel from which ripple data will be processed;
 - Output: output TTL channel where detection events are marked;
@@ -44,7 +44,7 @@ The ripple detection algorithm works in two steps:
 
 Summary of the algorithm:
 
-![Ripple detection algorithm](Figures/rippleDetectionAlgorithm.png)
+![Ripple detection algorithm](Resources/Figures/rippleDetectionAlgorithm.png)
 
 ## Citation and more info
 
