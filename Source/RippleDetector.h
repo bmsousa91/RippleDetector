@@ -29,7 +29,7 @@ public:
 	void evalMovement(std::vector<double>& emgRmsValuesArr, std::vector<int>& emgRmsNumSamplesArray);
     double calculateRms(const float* data, int initIndex, int endIndexOpen);
 	double calculateRms(std::vector<float> data, int initIndex, int endIndex);
-	std::vector<float> RippleDetector::calculateAccelMod(const float* axis[3], int numberOfSamples);
+	std::vector<float> calculateAccelMod(const float* axis[3], int numberOfSamples);
 
 	// Time-related variables
 	float sampleRate;

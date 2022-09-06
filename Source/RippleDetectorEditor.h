@@ -7,7 +7,6 @@
 #include <iomanip>
 
 class RippleDetectorEditor : public GenericEditor, 
-                         public Button::Listener, 
                          public ComboBox::Listener, 
                          public Label::Listener
 {
