@@ -26,8 +26,8 @@
 #define MAX_TIME_MOV_ABOVE_THRESHOLD 999999
 
 // Class constructor
-RippleDetectorEditor::RippleDetectorEditor(GenericProcessor* parentNode, bool useDefaultParameterEditors = true)
-	: GenericEditor(parentNode, useDefaultParameterEditors)
+RippleDetectorEditor::RippleDetectorEditor(GenericProcessor* parentNode)
+	: GenericEditor(parentNode)
 {
 	desiredWidth = 460; //Plugin's desired width
 
@@ -91,7 +91,7 @@ RippleDetectorEditor::RippleDetectorEditor(GenericProcessor* parentNode, bool us
 	// ------------------------
 	// Create the "Recalibrate" button
 	_buttonCalibrate = new UtilityButton("CALIBRATE", Font("Default", 12, Font::plain));
-	_buttonCalibrate->addListener(this);
+	//_buttonCalibrate->addListener(this);
 	_buttonCalibrate->setClickingTogglesState(false);
 	_buttonCalibrate->setTooltip("Click this button to recalibrate threshold values for ripple detection and for the movement detection mechanism");
 	addAndMakeVisible(_buttonCalibrate);
@@ -428,6 +428,7 @@ static int getNextX(Component *rInReference)
 // Called when settings are updated
 void RippleDetectorEditor::updateSettings()
 {
+    /*
     int channelCount = getProcessor()->getNumInputs();
 
 	// Check if there are AUX channels and store their indices
@@ -444,4 +445,5 @@ void RippleDetectorEditor::updateSettings()
 	updateOutputChannels(AVAILABLE_TTL_OUTPUT_CHANNELS);
 	updateMovChannels(channelCount);
 	updateMovOutputChannels(AVAILABLE_TTL_OUTPUT_CHANNELS);
+    */
 }

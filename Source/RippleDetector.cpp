@@ -8,6 +8,7 @@ RippleDetector::RippleDetector()
     : GenericProcessor("Ripple Detector")
 {
 	// Init variables
+    /*
     rmsMean = 0.0;
 	rmsStd = 0.0;
 	movRmsMean = 0.0;
@@ -33,17 +34,15 @@ RippleDetector::RippleDetector()
 	calibrationRmsValues.clear();
 	calibrationMovRmsValues.clear();
 
-    setProcessorType(PROCESSOR_TYPE_FILTER);
+    //setProcessorType(PROCESSOR_TYPE_FILTER);
     createEventChannels();
-}
-
-RippleDetector::~RippleDetector()
-{
+     */
 }
 
 // Create event channels
 void RippleDetector::createEventChannels()
 {
+    /*
     const DataChannel *in = getDataChannel(0);
 	sampleRate = (in) ? in->getSampleRate() : CoreServices::getGlobalSampleRate();
     pTtlEventChannel = new EventChannel(EventChannel::TTL, 8, 1, sampleRate, this);
@@ -68,31 +67,64 @@ void RippleDetector::createEventChannels()
     }
 
     eventChannelArray.add(pTtlEventChannel);
+     */
 }
 
 // Update settings
 void RippleDetector::updateSettings()
 {
+    /*
     const DataChannel *in = getDataChannel(0);
 	sampleRate = (in) ? in->getSampleRate() : CoreServices::getGlobalSampleRate();
 	calibrationPoints = sampleRate * CALIBRATION_DURATION_SECONDS;
+     */
 }
 
 // Create and return editor
 AudioProcessorEditor *RippleDetector::createEditor()
 {
-    editor = new RippleDetectorEditor(this, true);
+    editor = std::make_unique<RippleDetectorEditor>(this);
 
+    /*
 	RippleDetectorEditor* ed = (RippleDetectorEditor*)getEditor();
 	NO_EMG_CHANNEL_ID = ed->_noMovChannelId - 1;	//Get the id for "-" and "ACCEL" options in the EMG/ACCEL combobox
 	ACCEL_CHANNEL_ID = ed->_accelChannelId - 1;		//Get the id for "-" and "ACCEL" options in the EMG/ACCEL combobox
+    */
 
-    return editor;
+    return editor.get();
+}
+
+void RippleDetector::parameterValueChanged(Parameter* param)
+{
+    /* PK: Copied from PhaseDetector...need to update
+    if (param->getName().equalsIgnoreCase("phase"))
+    {
+        settings[param->getStreamId()]->detectorType = DetectorType((int) param->getValue());
+    }
+    else if (param->getName().equalsIgnoreCase("Channel"))
+    {
+        int localIndex = (int)param->getValue();
+        int globalIndex = getDataStream(param->getStreamId())->getContinuousChannels()[localIndex]->getGlobalIndex();
+        settings[param->getStreamId()]->triggerChannel = globalIndex;
+    }
+    else if (param->getName().equalsIgnoreCase("TTL_out"))
+    {
+        settings[param->getStreamId()]->lastOutputLine = settings[param->getStreamId()]->outputLine;
+        settings[param->getStreamId()]->outputLine = (int)param->getValue() - 1;
+        settings[param->getStreamId()]->outputLineChanged = true;
+    }
+    else if (param->getName().equalsIgnoreCase("gate_line"))
+    {
+        settings[param->getStreamId()]->gateLine = (int)param->getValue() - 1;
+    }
+     */
+
 }
 
 // Data acquisition and manipulation loop
 void RippleDetector::process(AudioSampleBuffer &inputData)
 {
+    /*
 	//Update parameters according to UI
 	const DataChannel *in = getDataChannel(0);
 	RippleDetectorEditor* ed = (RippleDetectorEditor*)getEditor();
@@ -245,6 +277,7 @@ void RippleDetector::process(AudioSampleBuffer &inputData)
 		detectRipples(rmsValuesArray, rmsNumSamplesArray);
 		if (movSwitchEnabled) evalMovement(movRmsValuesArray, movRmsNumSamplesArray);
 	}
+     */
 }
 
 // Calculate the RMS of inputData data from position initIndex (included) to endIndex (not included)
@@ -285,6 +318,7 @@ void RippleDetector::finishCalibration()
 {
 		printf("Calibration finished!\n");
 
+        /*
 		// Set flag to false to end the calibration period
 		isCalibrating = false;
 
@@ -344,11 +378,13 @@ void RippleDetector::finishCalibration()
 				   "Ripple channel -> final RMS threshold: %f\n",
 				rmsMean, rmsStd, uiRippleSds, threshold);
 		}
+         */
 }
 
 // Evaluate RMS values in the detection algorithm
 void RippleDetector::detectRipples(std::vector<double>& rmsValuesArr, std::vector<int>& rmsNumSamplesArray)
 {
+    /*
 	// Iterate over RMS blocks inside buffer
     for (unsigned int rmsIdx = 0; rmsIdx < rmsValuesArr.size(); rmsIdx++)
     {
@@ -398,11 +434,14 @@ void RippleDetector::detectRipples(std::vector<double>& rmsValuesArr, std::vecto
 			if (timeNow.count() - refractoryTimeStart.count() >= uiRefractoryTime) { onRefractoryTime = false; }
 		}
     }
+    */
 }
 
 // Evaluate EMG/ACC signal to enable or disable ripple detection
 void RippleDetector::evalMovement(std::vector<double>& movRmsValuesArr, std::vector<int>& movRmsNumSamplesArray)
 {
+    
+    /*
 	// Iterate over RMS blocks inside buffer
 	for (unsigned int rmsIdx = 0; rmsIdx < movRmsValuesArr.size(); rmsIdx++)
 	{
@@ -440,14 +479,15 @@ void RippleDetector::evalMovement(std::vector<double>& movRmsValuesArr, std::vec
 			sendTtlEvent(rmsIdx, 0, uiMovOutChannel);
 		}
 
-		/*printf("plugin %d, flagUp %d, flagDown %d, Up %d, Down %d, rms %f, thresh %f\n", 
-			pluginEnabled, flagMovMinTimeUp, flagMovMinTimeDown, counterMovUpThresh, counterMovDownThresh, rms, movThreshold);*/
+		//printf("plugin %d, flagUp %d, flagDown %d, Up %d, Down %d, rms %f, thresh %f\n", pluginEnabled, flagMovMinTimeUp, flagMovMinTimeDown, counterMovUpThresh, counterMovDownThresh, rms, movThreshold);
 	}
+    */
 }
 
 // Send TTL output signal
 void RippleDetector::sendTtlEvent(int rmsIndex, int val, int outputChannel)
 {
+    /*
 	// Timestamp for this sample
 	uint64 time_stamp = getTimestamp(uiInputChannel) + rmsIndex;
 
@@ -456,13 +496,34 @@ void RippleDetector::sendTtlEvent(int rmsIndex, int val, int outputChannel)
 	ttlData = val << outputChannel;
 	TTLEventPtr ttl = TTLEvent::createTTLEvent(pTtlEventChannel, time_stamp, &ttlData, sizeof(uint8), output_event_channel);
 	addEvent(pTtlEventChannel, ttl, rmsIndex);
+     */
 }
 
 // Handle events
+
+void RippleDetector::handleTTLEvent (TTLEventPtr event)
+{
+    /* PK: Copied from PhaseDetector, implement for RippleDetector
+    const uint16 eventStream = event->getStreamId();
+    
+    if (settings[eventStream]->gateLine > -1)
+    {
+     
+        if (settings[eventStream]->gateLine == event->getLine())
+            settings[eventStream]->isActive = event->getState();
+        
+    }
+    */
+
+}
+
+/*
 void RippleDetector::handleEvent(const EventChannel *rInEventInfo, const MidiMessage &rInEvent, int samplePosition)
 {
 }
+ */
 
+/*
 // Save last parameters
 void RippleDetector::saveCustomParametersToXml(XmlElement* parentElement)
 {
@@ -470,13 +531,13 @@ void RippleDetector::saveCustomParametersToXml(XmlElement* parentElement)
 	//RippleDetectorEditor* ed = (RippleDetectorEditor*)getEditor();
 
 	//mainNode->setAttribute("rippleInputCh", ed->_inChannel);
-	///*mainNode->setAttribute("input2", m_input2);
+	//mainNode->setAttribute("input2", m_input2);
 	//mainNode->setAttribute("input1gate", m_input1gate);
 	//mainNode->setAttribute("input2gate", m_input2gate);
 	//mainNode->setAttribute("logicOp", m_logicOp);
 	//mainNode->setAttribute("outputChan", m_outputChan);
 	//mainNode->setAttribute("window", m_window);
-	//mainNode->setAttribute("duration", m_pulseDuration);*/
+	//mainNode->setAttribute("duration", m_pulseDuration);
 
 }
 
@@ -492,16 +553,17 @@ void RippleDetector::loadCustomParametersFromXml()
 	//			RippleDetectorEditor* ed = (RippleDetectorEditor*)getEditor();
 
 	//			ed->_inChannel = mainNode->getIntAttribute("rippleInputCh");
-	//			/*m_input2 = mainNode->getIntAttribute("input2");
+	//			//m_input2 = mainNode->getIntAttribute("input2");
 	//			m_input1gate = mainNode->getBoolAttribute("input1gate");
 	//			m_input2gate = mainNode->getBoolAttribute("input2gate");
 	//			m_logicOp = mainNode->getIntAttribute("logicOp");
 	//			m_outputChan = mainNode->getIntAttribute("outputChan");
 	//			m_window = mainNode->getIntAttribute("window");
-	//			m_pulseDuration = mainNode->getIntAttribute("duration");*/
+	//			m_pulseDuration = mainNode->getIntAttribute("duration");
 
 	//			//editor->updateSettings();
 	//		}
 	//	}
 	//}
 }
+*/

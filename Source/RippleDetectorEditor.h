@@ -11,7 +11,7 @@ class RippleDetectorEditor : public GenericEditor,
                          public Label::Listener
 {
 public:
-    RippleDetectorEditor(GenericProcessor* parentNode, bool useDefaultParameterEditors);
+    RippleDetectorEditor(GenericProcessor* parentNode);
     virtual ~RippleDetectorEditor();
 
     void updateInputChannels(int channelCount);
@@ -23,7 +23,7 @@ public:
     Label* createInputBox(String componentName, String tooltipText);
     ScopedPointer<ComboBox> createComboBox(String tooltipText);
 
-    void buttonClicked(Button *pInButtonClicked) override;
+    void buttonClicked(Button *pInButtonClicked);
     void comboBoxChanged(ComboBox *pInComboBoxChanged) override;
     void labelTextChanged(Label* pLabel) override;
     void setInputBoxStatus(Label* pInputBox, bool enabled);
