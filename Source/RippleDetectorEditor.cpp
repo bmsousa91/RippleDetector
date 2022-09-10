@@ -1,49 +1,54 @@
 // v060422
 #include "RippleDetectorEditor.h"
 
-#define AVAILABLE_INPUT_CHANNELS 32
-#define AVAILABLE_TTL_OUTPUT_CHANNELS 8
-
-#define MIN_AMP_THRESHOLD 0
-#define MAX_AMP_THRESHOLD 9999
-
-#define MIN_TIME_THRESHOLD 0
-#define MAX_TIME_THRESHOLD 9999
-
-#define MIN_REFRACTORY_TIME 0
-#define MAX_REFRACTORY_TIME 999999
-
-#define MIN_RMS_BLOCK_SIZE 1
-#define MAX_RMS_BLOCK_SIZE 2048
-
-#define MIN_MOV_AMP_THRESHOLD 0
-#define MAX_MOV_AMP_THRESHOLD 9999
-
-#define MIN_TIME_MOV_BELOW_THRESHOLD 0
-#define MAX_TIME_MOV_BELOW_THRESHOLD 999999
-
-#define MIN_TIME_MOV_ABOVE_THRESHOLD 0
-#define MAX_TIME_MOV_ABOVE_THRESHOLD 999999
-
 // Class constructor
 RippleDetectorEditor::RippleDetectorEditor(GenericProcessor* parentNode)
 	: GenericEditor(parentNode)
 {
-	desiredWidth = 460; //Plugin's desired width
+    
+    rippleDetector = (RippleDetector*)parentNode;
+    
+	desiredWidth = 460; //Plugin's desired width`
 
+	/* Ripple Detection Settings */
+	addSelectedChannelsParameterEditor("Ripple_Input", 10, 40);
+
+	addComboBoxParameterEditor("Ripple_Out", 10, 70);
+
+	addTextBoxParameterEditor("ripple_std", 110, 25);
+	addTextBoxParameterEditor("time_thresh", 110, 50);
+	addTextBoxParameterEditor("refr_time", 110, 75);
+	addTextBoxParameterEditor("rms_samples", 110, 100);
+
+	/* EMG / ACC Movement Detection Settings */
+	addSelectedChannelsParameterEditor("emg_acc_in", 210, 30);
+	addComboBoxParameterEditor("emg_acc_out", 210, 70);
+
+	addTextBoxParameterEditor("emg_acc_std", 310, 25);
+	addTextBoxParameterEditor("min_steady_time", 310, 50);
+	addTextBoxParameterEditor("min_mov_time", 310, 75);
+
+	/* Calibration Button */
+	calibrateButton = std::make_unique<UtilityButton>("Calibrate", titleFont);
+	calibrateButton->addListener(this);
+    calibrateButton->setRadius(3.0f);
+    calibrateButton->setBounds(310, 100, 80, 30);
+    addAndMakeVisible(calibrateButton.get());
+
+	/*
 	// ------------------------
     // Init comboboxes with available channels
 	_comboInChannelSelection = createComboBox("Input channel");
-	updateInputChannels(AVAILABLE_INPUT_CHANNELS);
+	//updateInputChannels(AVAILABLE_INPUT_CHANNELS);
 
 	_comboOutChannelSelection = createComboBox("Output TTL channel: raise event when ripple is detected");
-	updateOutputChannels(AVAILABLE_TTL_OUTPUT_CHANNELS);
+	//updateOutputChannels(AVAILABLE_TTL_OUTPUT_CHANNELS);
 
 	_comboMovChannelSelection = createComboBox("EMG/ACC input channel");
-	updateMovChannels(AVAILABLE_INPUT_CHANNELS);
+	//updateMovChannels(AVAILABLE_INPUT_CHANNELS);
 
 	_comboMovOutChannelSelection = createComboBox("EMG/ACC output TTL channel: raise event when movement is detected and ripple detection is disabled");
-	updateMovOutputChannels(AVAILABLE_TTL_OUTPUT_CHANNELS);
+	//updateMovOutputChannels(AVAILABLE_TTL_OUTPUT_CHANNELS);
 
 	// ------------------------
 	// Input box: number of standard deviations above the average to be the amplitude threshold
@@ -98,6 +103,7 @@ RippleDetectorEditor::RippleDetectorEditor(GenericProcessor* parentNode)
 
 	// Set the position of all components
 	setComponentsPositions();
+	*/
 }
 
 // Class destructor
@@ -160,6 +166,7 @@ void RippleDetectorEditor::setComponentsPositions() {
 	_buttonCalibrate->setBounds(getNextX(_inputBoxRmsSamples) + 19 * xSpaceColumns, getNextY(_inputBoxMinTimeWMov) + 7, 120, 20);
 }
 
+/*
 // Update input channel combo and set the first channel in the list
 void RippleDetectorEditor::updateInputChannels(int channelCount)
 {
@@ -209,6 +216,7 @@ void RippleDetectorEditor::updateMovOutputChannels(int channelCount)
 	}
 	_comboMovOutChannelSelection->setSelectedId(3, dontSendNotification);
 }
+*/
 
 // Create a label object and make it visible
 Label* RippleDetectorEditor::createLabel(String labelText, Justification just)
@@ -251,9 +259,9 @@ ScopedPointer<ComboBox> RippleDetectorEditor::createComboBox(String tooltipText)
 // Called when any button is clicked
 void RippleDetectorEditor::buttonClicked(Button *pInButtonClicked)
 {
-    if(pInButtonClicked == _buttonCalibrate){
-        _calibrate = true;
-    }
+	/* Calibrate button was clicked */
+	//rippleDetector->setCalibrate(true);
+	LOGD("Clicked calibrate button!");
 }
 
 // Called when the value of any combo box changes
@@ -304,48 +312,24 @@ void RippleDetectorEditor::labelTextChanged(Label* pLabel)
 		_rippleSds = adjustAndGetValueFromText(val.getValue());
 		_rippleSds = setDecimalPlaces(_rippleSds,1);
 
-		if (_rippleSds < MIN_AMP_THRESHOLD) {
-			_rippleSds = MIN_AMP_THRESHOLD;
-		}
-		else if(_rippleSds > MAX_AMP_THRESHOLD) {
-			_rippleSds = MAX_AMP_THRESHOLD;
-		}
 		pLabel->setText(String(_rippleSds), dontSendNotification);
 	}
 
 	if (pLabel == _inputBoxTimeThreshold) {
 		_timeThreshold = (int)adjustAndGetValueFromText(val.getValue());
 
-		if (_timeThreshold < MIN_TIME_THRESHOLD) {
-			_timeThreshold = MIN_TIME_THRESHOLD;
-		}
-		else if (_timeThreshold > MAX_TIME_THRESHOLD) {
-			_timeThreshold = MAX_TIME_THRESHOLD;
-		}
 		pLabel->setText(String(_timeThreshold), dontSendNotification);
 	}
 
 	if (pLabel == _inputBoxRefractory) {
 		_refractoryTime = (int)adjustAndGetValueFromText(val.getValue());
 
-		if (_refractoryTime < MIN_REFRACTORY_TIME) {
-			_refractoryTime = MIN_REFRACTORY_TIME;
-		}
-		else if (_refractoryTime > MAX_REFRACTORY_TIME) {
-			_refractoryTime = MAX_REFRACTORY_TIME;
-		}
 		pLabel->setText(String(_refractoryTime), dontSendNotification);
 	}
 
 	if (pLabel == _inputBoxRmsSamples) {
 		_rmsSamples = (int)adjustAndGetValueFromText(val.getValue());
 
-		if (_rmsSamples < MIN_RMS_BLOCK_SIZE) {
-			_rmsSamples = MIN_RMS_BLOCK_SIZE;
-		}
-		else if (_rmsSamples > MAX_RMS_BLOCK_SIZE) {
-			_rmsSamples = MAX_RMS_BLOCK_SIZE;
-		}
 		pLabel->setText(String(_rmsSamples), dontSendNotification);
 	}
 	
@@ -353,36 +337,18 @@ void RippleDetectorEditor::labelTextChanged(Label* pLabel)
 		_movSds = (double)adjustAndGetValueFromText(val.getValue());
 		_movSds = setDecimalPlaces(_movSds, 1);
 
-		if (_movSds < MIN_MOV_AMP_THRESHOLD) {
-			_movSds = MIN_MOV_AMP_THRESHOLD;
-		}
-		else if (_movSds > MAX_MOV_AMP_THRESHOLD) {
-			_movSds = MAX_MOV_AMP_THRESHOLD;
-		}
 		pLabel->setText(String(_movSds), dontSendNotification);
 	}
 
 	if (pLabel == _inputBoxMinTimeWoMov) {
 		_minTimeWoMov = (int)adjustAndGetValueFromText(val.getValue());
 
-		if (_minTimeWoMov < MIN_TIME_MOV_BELOW_THRESHOLD) {
-			_minTimeWoMov = MIN_TIME_MOV_BELOW_THRESHOLD;
-		}
-		else if (_minTimeWoMov > MAX_TIME_MOV_BELOW_THRESHOLD) {
-			_minTimeWoMov = MAX_TIME_MOV_BELOW_THRESHOLD;
-		}
 		pLabel->setText(String(_minTimeWoMov), dontSendNotification);
 	}
 
 	if (pLabel == _inputBoxMinTimeWMov) {
 		_minTimeWMov = (int)adjustAndGetValueFromText(val.getValue());
 
-		if (_minTimeWMov < MIN_TIME_MOV_ABOVE_THRESHOLD) {
-			_minTimeWMov = MIN_TIME_MOV_ABOVE_THRESHOLD;
-		}
-		else if (_minTimeWMov > MAX_TIME_MOV_ABOVE_THRESHOLD) {
-			_minTimeWMov = MAX_TIME_MOV_ABOVE_THRESHOLD;
-		}
 		pLabel->setText(String(_minTimeWMov), dontSendNotification);
 	}
 }
@@ -428,9 +394,11 @@ static int getNextX(Component *rInReference)
 // Called when settings are updated
 void RippleDetectorEditor::updateSettings()
 {
-    /*
-    int channelCount = getProcessor()->getNumInputs();
 
+    //int channelCount = getProcessor()->getNumInputs();
+	int channelCount = rippleDetector->getDataStreams()[0]->getChannelCount();
+
+	/*
 	// Check if there are AUX channels and store their indices
 	const DataChannel* ch;
 	_accChannels.clear();
@@ -440,10 +408,13 @@ void RippleDetectorEditor::updateSettings()
 		DataChannel::DataChannelTypes tp = ch->getChannelType();
 		if (tp == DataChannel::DataChannelTypes::AUX_CHANNEL) _accChannels.push_back(ch->getSourceIndex());
 	}
+	*/
 
+	/*
     updateInputChannels(channelCount);
 	updateOutputChannels(AVAILABLE_TTL_OUTPUT_CHANNELS);
 	updateMovChannels(channelCount);
 	updateMovOutputChannels(AVAILABLE_TTL_OUTPUT_CHANNELS);
-    */
+	*/
+
 }

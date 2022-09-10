@@ -6,9 +6,12 @@
 #include <sstream>
 #include <iomanip>
 
-class RippleDetectorEditor : public GenericEditor, 
-                         public ComboBox::Listener, 
-                         public Label::Listener
+#include "RippleDetector.h"
+
+class RippleDetectorEditor : public GenericEditor,
+                        public Button::Listener,
+                        public ComboBox::Listener, 
+                        public Label::Listener
 {
 public:
     RippleDetectorEditor(GenericProcessor* parentNode);
@@ -82,6 +85,11 @@ public:
     bool _accelerometerSelected{ false };
 
 private:
+    
+    RippleDetector* rippleDetector;
+
+    std::unique_ptr<UtilityButton> calibrateButton;
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(RippleDetectorEditor);
 };
 

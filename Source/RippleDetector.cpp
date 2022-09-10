@@ -4,9 +4,116 @@
 
 #define CALIBRATION_DURATION_SECONDS 20
 
-RippleDetector::RippleDetector()
-    : GenericProcessor("Ripple Detector")
+RippleDetectorSettings::RippleDetectorSettings()
+{}
+
+RippleDetector::RippleDetector() : GenericProcessor("Ripple Detector")
 {
+
+	/* Ripple Detection Settings */
+	addSelectedChannelsParameter(
+		Parameter::STREAM_SCOPE, 
+		"Ripple_Input", 
+		"The continuous channel to analyze", 
+		1
+	);
+
+	addIntParameter(
+		Parameter::STREAM_SCOPE,
+		"Ripple_Out",
+		"The output TTL line",
+		1, 		//deafult
+		1, 		//min
+		16		//max
+	);
+
+	addFloatParameter(
+		Parameter::STREAM_SCOPE,
+		"ripple_std",
+		"Number of standard deviations above the average to be the amplitude threshold",
+		 5, 	//default 
+		 0, 	//min
+		 9999,  //max
+		 1  	//step
+	);
+
+    addFloatParameter(
+		Parameter::STREAM_SCOPE,
+		"time_thresh",
+		"time threshold value",
+		10,
+		0,
+		9999,
+		1		
+	);
+
+	addFloatParameter(
+		Parameter::STREAM_SCOPE, 
+		"refr_time", 
+		"refractory value", 
+		140, 
+		0, 
+		999999,
+		1
+	);
+
+    addFloatParameter(
+		Parameter::STREAM_SCOPE,
+		"rms_samples",
+		"rms samples value",
+		128,
+		1,
+		2048,
+		1
+	);
+
+	/* EMG / ACC Movement Detection Settings */
+	addSelectedChannelsParameter(
+		Parameter::STREAM_SCOPE,
+		"emg_acc_in",
+		"The continuous channel to analyze",
+		1
+	);
+
+	addIntParameter(
+		Parameter::STREAM_SCOPE,
+		"emg_acc_out",
+		"EMG/ACC output TTL channel: raise event when movement is detected and ripple detection is disabled",
+		1,
+		1,
+		16
+	);
+
+	addFloatParameter(
+		Parameter::STREAM_SCOPE,
+		"emg_acc_std", 
+		"Number of standard deviations above the average to be the amplitude threshold for the EMG/ACC",
+		5, 
+		0,
+		9999,
+		1
+	);
+
+    addFloatParameter(
+		Parameter::STREAM_SCOPE,
+		"min_steady_time",
+		"Minimum time steady (in milliseconds). The minimum time below the EMG/ACC threshold to enable detection",
+		5000,
+		0,
+		999999,
+		1
+	);
+
+	addFloatParameter(
+		Parameter::STREAM_SCOPE,
+		"min_mov_time",
+		"Minimum time with movement (in milliseconds). The minimum time above the EMG/ACC threshold to disable detection",
+		10,
+		0,
+		999999,
+		1
+	);
+
 	// Init variables
     /*
     rmsMean = 0.0;
@@ -78,6 +185,36 @@ void RippleDetector::updateSettings()
 	sampleRate = (in) ? in->getSampleRate() : CoreServices::getGlobalSampleRate();
 	calibrationPoints = sampleRate * CALIBRATION_DURATION_SECONDS;
      */
+
+	settings.update(getDataStreams());
+
+	for (auto stream : getDataStreams())
+	{
+
+		parameterValueChanged(stream->getParameter("Ripple_Input"));
+		parameterValueChanged(stream->getParameter("Ripple_Out"));
+		parameterValueChanged(stream->getParameter("ripple_std"));
+		parameterValueChanged(stream->getParameter("time_thresh"));
+		parameterValueChanged(stream->getParameter("refr_time"));
+		parameterValueChanged(stream->getParameter("rms_samples"));
+		parameterValueChanged(stream->getParameter("emg_acc_in"));
+		parameterValueChanged(stream->getParameter("emg_acc_out"));
+		parameterValueChanged(stream->getParameter("emg_acc_std"));
+		parameterValueChanged(stream->getParameter("min_steady_time"));
+		parameterValueChanged(stream->getParameter("min_mov_time"));
+
+		EventChannel::Settings s {
+			EventChannel::Type::TTL,
+			"Ripple detector output",
+			"Triggers when a ripple is detected on the input channel",
+			"dataderived.ripple",
+			getDataStream(stream->getStreamId())
+		};
+
+		eventChannels.add(new EventChannel(s));
+		eventChannels.getLast()->addProcessor(processorInfo.get());
+		settings[stream->getStreamId()]->eventChannel = eventChannels.getLast();
+	}
 }
 
 // Create and return editor
@@ -96,28 +233,59 @@ AudioProcessorEditor *RippleDetector::createEditor()
 
 void RippleDetector::parameterValueChanged(Parameter* param)
 {
-    /* PK: Copied from PhaseDetector...need to update
-    if (param->getName().equalsIgnoreCase("phase"))
-    {
-        settings[param->getStreamId()]->detectorType = DetectorType((int) param->getValue());
-    }
-    else if (param->getName().equalsIgnoreCase("Channel"))
-    {
-        int localIndex = (int)param->getValue();
-        int globalIndex = getDataStream(param->getStreamId())->getContinuousChannels()[localIndex]->getGlobalIndex();
-        settings[param->getStreamId()]->triggerChannel = globalIndex;
-    }
-    else if (param->getName().equalsIgnoreCase("TTL_out"))
-    {
-        settings[param->getStreamId()]->lastOutputLine = settings[param->getStreamId()]->outputLine;
-        settings[param->getStreamId()]->outputLine = (int)param->getValue() - 1;
-        settings[param->getStreamId()]->outputLineChanged = true;
-    }
-    else if (param->getName().equalsIgnoreCase("gate_line"))
-    {
-        settings[param->getStreamId()]->gateLine = (int)param->getValue() - 1;
-    }
-     */
+
+	String paramName = param->getName();
+	int streamId = param->getStreamId();
+
+	if (paramName.equalsIgnoreCase("Ripple_Input"))
+	{
+		int localIndex = (int)param->getValue();
+		int globalIndex = getDataStream(param->getStreamId())->getContinuousChannels()[localIndex]->getGlobalIndex();
+		settings[streamId]->rippleInputChannel = globalIndex;
+	}
+	else if (paramName.equalsIgnoreCase("Ripple_Out"))
+	{
+        settings[streamId]->rippleOutputChannel = (int)param->getValue() - 1;
+	}
+	else if (paramName.equalsIgnoreCase("Ripple_SDS"))
+	{
+		settings[streamId]->rippleSds = (float)param->getValue();
+	}
+	else if (paramName.equalsIgnoreCase("Time_Thresh"))
+	{
+		settings[streamId]->timeThreshold = (int)param->getValue();
+	}
+	else if (paramName.equalsIgnoreCase("Refr_Time"))
+	{
+		settings[streamId]->refractoryTime = (int)param->getValue();
+	}
+	else if (paramName.equalsIgnoreCase("RMS_Samples"))
+	{
+		settings[streamId]->rmsSamples = (int)param->getValue();
+	}
+	else if (paramName.equalsIgnoreCase("EMG_ACC_In"))
+	{
+		int localIndex = (int)param->getValue();
+		int globalIndex = getDataStream(param->getStreamId())->getContinuousChannels()[localIndex]->getGlobalIndex();
+		settings[streamId]->movementInputChannel = globalIndex;
+	}
+	else if (paramName.equalsIgnoreCase("EMG_ACC_Out"))
+	{
+		settings[streamId]->movementOutputChannel = (int)param->getValue() - 1;
+	}
+	else if (paramName.equalsIgnoreCase("EMG_ACC_STD"))
+	{
+		settings[streamId]->movSds = (float)param->getValue();
+	}
+	else if (paramName.equalsIgnoreCase("Min_Steady_Time"))
+	{
+		settings[streamId]->minTimeWoMov = (float)param->getValue();
+	}
+	else if (paramName.equalsIgnoreCase("Min_Mov_Time"))
+	{
+		settings[streamId]->minTimeWMov = (float)param->getValue();
+	}
+
 
 }
 
