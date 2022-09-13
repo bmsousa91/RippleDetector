@@ -111,7 +111,9 @@ RippleDetectorEditor::~RippleDetectorEditor()
 {
 }
 
+
 // Set the position of each component (labels, inputs, comboboxes...)
+/*
 void RippleDetectorEditor::setComponentsPositions() {
 
 	// Set the position, width and heigh of the elements: x, y, width, height
@@ -165,6 +167,7 @@ void RippleDetectorEditor::setComponentsPositions() {
 	// Calibrate button
 	_buttonCalibrate->setBounds(getNextX(_inputBoxRmsSamples) + 19 * xSpaceColumns, getNextY(_inputBoxMinTimeWMov) + 7, 120, 20);
 }
+*/
 
 /*
 // Update input channel combo and set the first channel in the list
@@ -267,6 +270,7 @@ void RippleDetectorEditor::buttonClicked(Button *pInButtonClicked)
 // Called when the value of any combo box changes
 void RippleDetectorEditor::comboBoxChanged(ComboBox *pInComboBoxChanged)
 {
+	/*
     if (pInComboBoxChanged == _comboInChannelSelection)
         _inChannel = pInComboBoxChanged->getSelectedId();
 
@@ -300,11 +304,13 @@ void RippleDetectorEditor::comboBoxChanged(ComboBox *pInComboBoxChanged)
 
 	if (pInComboBoxChanged == _comboMovOutChannelSelection)
 		_movOutChannel = pInComboBoxChanged->getSelectedId();
+	*/
 }
 
 // Called when any input box changes
 void RippleDetectorEditor::labelTextChanged(Label* pLabel)
 {
+	/*
 	Value val = pLabel->getTextValue();
 
 	// Check and adjust max and min values for the inputs
@@ -351,6 +357,7 @@ void RippleDetectorEditor::labelTextChanged(Label* pLabel)
 
 		pLabel->setText(String(_minTimeWMov), dontSendNotification);
 	}
+	*/
 }
 
 // Enable or disable inputBox
@@ -396,7 +403,6 @@ void RippleDetectorEditor::updateSettings()
 {
 
     //int channelCount = getProcessor()->getNumInputs();
-	int channelCount = rippleDetector->getDataStreams()[0]->getChannelCount();
 
 	/*
 	// Check if there are AUX channels and store their indices

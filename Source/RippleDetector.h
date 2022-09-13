@@ -9,6 +9,8 @@
 #include <vector>
 #include <chrono>
 
+class RippleDetectorEditor;
+
 class RippleDetectorSettings
 {
 public:
@@ -19,11 +21,13 @@ public:
 	/** Destructor **/
     ~RippleDetectorSettings() {}
     
-	/** Creates an event for a particular stream **/
-    //TTLEventPtr createEvent(int64 sample_number, bool state);
+	/** Creates an event associated with ripple detection */
+    TTLEventPtr createRippleEvent(int64 sample_number, bool state);
+
+    /** Creates an event associated with movement detection */
+    TTLEventPtr createMovementEvent(int64 sample_number, bool state);
     
     // Time-related variables
-    float sampleRate;
     std::chrono::milliseconds refractoryTimeStart;
     std::chrono::milliseconds timeNow;
 
@@ -56,17 +60,11 @@ public:
     std::vector<int> auxChannelIndices;        			//Contains the indices of aux channels. Useful for movement detector when "ACCEL" is selected
 
     // RMS variables
-    std::vector<double> rmsValuesArray;
-    std::vector<int> rmsNumSamplesArray;
-    std::vector<double> movRmsValuesArray;
-    std::vector<int> movRmsNumSamplesArray;
-    std::vector<double> calibrationRmsValues;
-    std::vector<double> calibrationMovRmsValues;
     int rmsEndIdx;            							//The end index for RMS calculation windows
     double rmsMean;            							//Baseline RMS mean for ripple detection
     double rmsStdDev;            						//Baseline RMS standard deviation for ripple detection
     double movRmsMean;        							//Baseline RMS mean for EMG/ACC signal
-    double movRmsStd;        							//Baseline RMS standard deviation for EMG signal
+    double movRmsStdDev;        						//Baseline RMS standard deviation for EMG signal
     double threshold;        							//Final threshold for ripple detection
     double movThreshold;    							//Final EMG/ACC threshold for movement detector
 
@@ -83,8 +81,9 @@ public:
     bool flagMovMinTimeDown{ false };        			//Indicates that the minimum time of EMG/ACC below threshold was achieved
     bool accelerometerSelected{ false };    			//True when accelerometer is selected to movement detector
 
-    // TTL event channel
-    EventChannel* eventChannel;
+    // TTL event channels
+    EventChannel* rippleEventChannel;
+    EventChannel* movementEventChannel;
     
 };
 
@@ -126,17 +125,29 @@ private:
     void createEventChannels();
     
     void handleTTLEvent(TTLEventPtr event) override;
+
+    RippleDetectorEditor* ed;
     
     StreamSettings<RippleDetectorSettings> settings;
+
+    std::map<uint64, std::vector<double>> rmsValuesArray;
+    std::map<uint64, std::vector<int>> rmsNumSamplesArray;
+    std::map<uint64, std::vector<double>> movRmsValuesArray;
+    std::map<uint64, std::vector<int>> movRmsNumSamplesArray;
+    std::map<uint64, std::vector<double>> calibrationRmsValues;
+    std::map<uint64, std::vector<double>> calibrationMovRmsValues;
     
     // Ripple-specific functions
-    void finishCalibration();
+    void finishCalibration(uint64 streamId);
     void detectRipples(std::vector<double>& rmsValuesArr, std::vector<int>& rmsNumSamplesArray);
     void evalMovement(std::vector<double>& emgRmsValuesArr, std::vector<int>& emgRmsNumSamplesArray);
     double calculateRms(const float* data, int initIndex, int endIndexOpen);
     double calculateRms(std::vector<float> data, int initIndex, int endIndex);
     std::vector<float> calculateAccelMod(const float* axis[3], int numberOfSamples);
     
+    bool pluginEnabled {true};
+    bool shouldCalibrate {true};
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(RippleDetector);
 };
 

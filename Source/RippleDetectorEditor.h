@@ -34,36 +34,6 @@ public:
     void updateSettings() override;
     void setComponentsPositions();
 
-    int _noMovChannelId = 999;
-    int _accelChannelId = 1111;
-
-	// Interface objects
-    ScopedPointer<ComboBox> _comboInChannelSelection;
-    ScopedPointer<ComboBox> _comboOutChannelSelection;
-    ScopedPointer<ComboBox> _comboMovChannelSelection;
-    ScopedPointer<ComboBox> _comboMovOutChannelSelection;
-    Label* _inputBoxSds;
-    Label* _inputBoxTimeThreshold;
-    Label* _inputBoxRefractory;
-    Label* _inputBoxRmsSamples;
-    Label* _inputBoxMovSds;
-    Label* _inputBoxMinTimeWoMov;
-    Label* _inputBoxMinTimeWMov;
-    UtilityButton* _buttonCalibrate;
-
-    // Labels
-    Label *_labelInputChannel;
-    Label *_labelOutputChannel;
-    Label* _labelMovChannel;
-    Label* _labelMovOutputChannel;
-    Label * _labelSds;
-	Label *_labelTimeThreshold;
-    Label *_labelRefractoryTime;
-    Label *_labelRmsSamples;
-    Label* _labelMovSds;
-    Label* _labelMinTimeWoMov;
-    Label* _labelMinTimeWMov;
-
     // Facade
     int _inChannel;
     int _outChannel;

@@ -7,6 +7,30 @@
 RippleDetectorSettings::RippleDetectorSettings()
 {}
 
+TTLEventPtr RippleDetectorSettings::createRippleEvent(int64 sample_number, bool state)
+{
+
+	return TTLEvent::createTTLEvent(
+		rippleEventChannel,
+		sample_number,
+		rippleOutputChannel,
+		state
+	);				
+
+}
+
+TTLEventPtr RippleDetectorSettings::createMovementEvent(int64 sample_number, bool state)
+{
+
+	return TTLEvent::createTTLEvent(
+		movementEventChannel,
+		sample_number,
+		movementOutputChannel,
+		state
+	);				
+
+}
+
 RippleDetector::RippleDetector() : GenericProcessor("Ripple Detector")
 {
 
@@ -114,36 +138,7 @@ RippleDetector::RippleDetector() : GenericProcessor("Ripple Detector")
 		1
 	);
 
-	// Init variables
-    /*
-    rmsMean = 0.0;
-	rmsStd = 0.0;
-	movRmsMean = 0.0;
-	movRmsStd = 0.0;
-    threshold = 0.0;
-	movThreshold = 0.0;
-
-    uiRippleSds = 0.0;
-	uiTimeThreshold = 0;
-	uiRefractoryTime = 0;
-	uiRmsSamples = 0;
-	uiMovSds = 0.0;
-	uiMinTimeWoMov = 0;
-	uiMinTimeWMov = 0;
-
-	counterAboveThresh = 0;
-	counterMovUpThresh = 0;
-	counterMovDownThresh = 0;
-
-	pointsProcessed = 0;
-
-	// Reset calibration arrays
-	calibrationRmsValues.clear();
-	calibrationMovRmsValues.clear();
-
-    //setProcessorType(PROCESSOR_TYPE_FILTER);
-    createEventChannels();
-     */
+	ed = (RippleDetectorEditor*)getEditor();
 }
 
 // Create event channels
@@ -180,16 +175,40 @@ void RippleDetector::createEventChannels()
 // Update settings
 void RippleDetector::updateSettings()
 {
-    /*
-    const DataChannel *in = getDataChannel(0);
-	sampleRate = (in) ? in->getSampleRate() : CoreServices::getGlobalSampleRate();
-	calibrationPoints = sampleRate * CALIBRATION_DURATION_SECONDS;
-     */
 
 	settings.update(getDataStreams());
 
 	for (auto stream : getDataStreams())
 	{
+
+		//TODO: Move these into map in RippleDetector class
+		settings[stream->getStreamId()]->rmsEndIdx = 0;
+		settings[stream->getStreamId()]->rmsMean = 0;
+		settings[stream->getStreamId()]->rmsStdDev = 0;
+		settings[stream->getStreamId()]->movRmsMean = 0;
+		settings[stream->getStreamId()]->movRmsStdDev = 0;
+		settings[stream->getStreamId()]->threshold = 0;
+		settings[stream->getStreamId()]->movThreshold = 0;
+
+		settings[stream->getStreamId()]->rippleSds = 0.0;
+		settings[stream->getStreamId()]->timeThreshold = 0;
+		settings[stream->getStreamId()]->refractoryTime = 0;
+		settings[stream->getStreamId()]->rmsSamples = 0;
+		settings[stream->getStreamId()]->movSds = 0.0;
+		settings[stream->getStreamId()]->minTimeWoMov = 0;
+		settings[stream->getStreamId()]->minTimeWMov = 0;
+
+		settings[stream->getStreamId()]->counterAboveThresh = 0;
+		settings[stream->getStreamId()]->counterMovUpThresh = 0;
+		settings[stream->getStreamId()]->counterMovDownThresh = 0;
+
+		settings[stream->getStreamId()]->pointsProcessed = 0;
+
+		// Reset calibration arrays
+		calibrationRmsValues[stream->getStreamId()].clear();
+		calibrationMovRmsValues[stream->getStreamId()].clear();
+
+		settings[stream->getStreamId()]->calibrationPoints = stream->getSampleRate() * CALIBRATION_DURATION_SECONDS;
 
 		parameterValueChanged(stream->getParameter("Ripple_Input"));
 		parameterValueChanged(stream->getParameter("Ripple_Out"));
@@ -203,7 +222,7 @@ void RippleDetector::updateSettings()
 		parameterValueChanged(stream->getParameter("min_steady_time"));
 		parameterValueChanged(stream->getParameter("min_mov_time"));
 
-		EventChannel::Settings s {
+		EventChannel::Settings rippleSettings {
 			EventChannel::Type::TTL,
 			"Ripple detector output",
 			"Triggers when a ripple is detected on the input channel",
@@ -211,9 +230,22 @@ void RippleDetector::updateSettings()
 			getDataStream(stream->getStreamId())
 		};
 
-		eventChannels.add(new EventChannel(s));
+		eventChannels.add(new EventChannel(rippleSettings));
 		eventChannels.getLast()->addProcessor(processorInfo.get());
-		settings[stream->getStreamId()]->eventChannel = eventChannels.getLast();
+		settings[stream->getStreamId()]->rippleEventChannel = eventChannels.getLast();
+
+		
+		EventChannel::Settings movementSettings {
+			EventChannel::Type::TTL,
+			"Movement detector output",
+			"Triggers when a movement is detected on the input channel",
+			"dataderived.movement",
+			getDataStream(stream->getStreamId())
+		};
+
+		eventChannels.add(new EventChannel(movementSettings));
+		eventChannels.getLast()->addProcessor(processorInfo.get());
+		settings[stream->getStreamId()]->movementEventChannel = eventChannels.getLast();
 	}
 }
 
@@ -247,13 +279,15 @@ void RippleDetector::parameterValueChanged(Parameter* param)
 	{
         settings[streamId]->rippleOutputChannel = (int)param->getValue() - 1;
 	}
-	else if (paramName.equalsIgnoreCase("Ripple_SDS"))
+	else if (paramName.equalsIgnoreCase("ripple_std"))
 	{
 		settings[streamId]->rippleSds = (float)param->getValue();
 	}
 	else if (paramName.equalsIgnoreCase("Time_Thresh"))
 	{
 		settings[streamId]->timeThreshold = (int)param->getValue();
+		settings[streamId]->numSamplesTimeThreshold = 
+			ceil(getDataStream(streamId)->getSampleRate() * settings[streamId]->timeThreshold / 1000);
 	}
 	else if (paramName.equalsIgnoreCase("Refr_Time"))
 	{
@@ -279,173 +313,115 @@ void RippleDetector::parameterValueChanged(Parameter* param)
 	}
 	else if (paramName.equalsIgnoreCase("Min_Steady_Time"))
 	{
-		settings[streamId]->minTimeWoMov = (float)param->getValue();
+		settings[streamId]->minTimeWoMov = (int)param->getValue();
+		settings[streamId]->minMovSamplesBelowThresh = 
+			ceil(getDataStream(streamId)->getSampleRate() * settings[streamId]->minTimeWoMov / 1000);
 	}
 	else if (paramName.equalsIgnoreCase("Min_Mov_Time"))
 	{
-		settings[streamId]->minTimeWMov = (float)param->getValue();
+		settings[streamId]->minTimeWMov = (int)param->getValue();
+		settings[streamId]->minMovSamplesAboveThresh = 
+			ceil(getDataStream(streamId)->getSampleRate() * settings[streamId]->minTimeWMov / 1000);
 	}
 
 
 }
 
 // Data acquisition and manipulation loop
-void RippleDetector::process(AudioSampleBuffer &inputData)
+void RippleDetector::process(AudioBuffer<float>& buffer)
 {
-    /*
-	//Update parameters according to UI
-	const DataChannel *in = getDataChannel(0);
-	RippleDetectorEditor* ed = (RippleDetectorEditor*)getEditor();
 
-	uiInputChannel = ed->_inChannel - 1;
-	uiOutputChannel = ed->_outChannel - 1;
-	uiMovChannel = ed->_movChannel - 1;
-	uiMovOutChannel = ed->_movOutChannel - 1;
-
-	auxChannelIndices = ed->_accChannels;
-
-	uiRippleSds = ed->_rippleSds;
-	uiTimeThreshold = ed->_timeThreshold;
-	uiRefractoryTime = ed->_refractoryTime;
-	uiRmsSamples = ed->_rmsSamples;
-	uiMovSds = ed->_movSds;
-	uiMinTimeWoMov = ed->_minTimeWoMov;
-	uiMinTimeWMov = ed->_minTimeWMov;
-
-	movChannChanged = ed->_movChannChanged;
-	calibrate = ed->_calibrate;
-	movSwitchEnabled = ed->_movSwitchEnabled;
-	accelerometerSelected = ed->_accelerometerSelected;
-
-	bufferSize = inputData.getNumSamples();
-	realNumberOfSamples = GenericProcessor::getNumSamples(uiInputChannel);
-
-	// Sometimes it occurs that the number of samples is 0
-	// In this case, finishes the process
-	if (realNumberOfSamples == 0) return;
-
-	// Enable detection again if the mov. detector channel is "-" or if calibration button was clicked
-	if ((!movSwitchEnabled && !pluginEnabled) || (!pluginEnabled && calibrate))
+	for (auto stream : getDataStreams())
 	{
-		//printf("Detection enabled.\n");
-		pluginEnabled = true;
-		sendTtlEvent(0, 0, uiMovOutChannel);
-	}
-	
-	// Calculate the number of samples equivalent to the time threshold
-	// and update the detection thresholds (in case the user changes the SDs value)
-	numSamplesTimeThreshold = ceil(sampleRate * uiTimeThreshold / 1000);
-	minMovSamplesBelowThresh = ceil(sampleRate * uiMinTimeWoMov / 1000);
-	minMovSamplesAboveThresh = ceil(sampleRate * uiMinTimeWMov / 1000);
-	threshold = rmsMean + uiRippleSds * rmsStd;
-	movThreshold = movRmsMean + uiMovSds * movRmsStd;
-
-	// Check if the number of samples to calculate the RMS is not 
-	// larger than the total number of samples provided in this cycle and adjust if necessary
-	if (uiRmsSamples > realNumberOfSamples)
-		uiRmsSamples = realNumberOfSamples;
-
-	// Check if recalibration button was clicked or EMG channel changed to a valid id
-	if (calibrate == true || (movChannChanged && uiMovChannel != NO_EMG_CHANNEL_ID))
-	{
-		printf("Calibrating...\n");
-		ed->_calibrate = false;			//Reset the state of this variable in its origin
-		ed->_movChannChanged = false;	//Reset the state of this variable in its origin
-		isCalibrating = true;
-		pointsProcessed = 0;
-
-		// Reset calibration RMS array
-		calibrationRmsValues.clear();
-		calibrationMovRmsValues.clear();
-	}
-
-	// Get pointers to ripple data and to movement detector data (EMG or accelerometer)
-	const float *pSwrData = inputData.getReadPointer(uiInputChannel);
-	const float* pEmgData{NULL};
-	const float* pAccelData[3]{NULL, NULL, NULL};
-	std::vector<float> accMagnit; accMagnit.clear();
-
-	if (movSwitchEnabled) {
-		if (!accelerometerSelected) {	//EMG selected
-			pEmgData = inputData.getReadPointer(uiMovChannel);
-		}
-		else {	//Accelerometer selected
-			for (int idx = 0; idx < auxChannelIndices.size(); idx++) {
-				pAccelData[idx] = inputData.getReadPointer(auxChannelIndices[idx]);
-			}
-			// Convert the 3 axes data to the magnitude of the vector
-			accMagnit = calculateAccelMod(pAccelData, realNumberOfSamples);
-		}
-	}
-
-	// Guarante that the arrays with RMS values will be clean
-	rmsValuesArray.clear();
-	movRmsValuesArray.clear();
-	rmsNumSamplesArray.clear(); 
-	movRmsNumSamplesArray.clear();
-
-	// Calculate RMS for each subblock of "uiRmsSamples" samples inside buffer
-	for (int rmsStartIdx = 0; rmsStartIdx < realNumberOfSamples; rmsStartIdx += uiRmsSamples)
-	{
-		// Get rid of analysing 0-valued samples in the end of the buffer
-		if (rmsStartIdx + uiRmsSamples > realNumberOfSamples)
-			rmsEndIdx = realNumberOfSamples;
-		else
-			rmsEndIdx = rmsStartIdx + uiRmsSamples;
-		// RMS calculation (includes rmsStartIdx but excludes rmsEndIdx)
-		double rms = calculateRms(pSwrData, rmsStartIdx, rmsEndIdx);
-
-		double movRms = 0; 
-		if (movSwitchEnabled) {
-			if(!accelerometerSelected) 
-				movRms = calculateRms(pEmgData, rmsStartIdx, rmsEndIdx);
-			else {
-				movRms = calculateRms(accMagnit, rmsStartIdx, rmsEndIdx);
-			}
-		}
-
-		// Calculate the RMS average to further determine a baseline for the threshold
-		if (isCalibrating)
+		if ((*stream)["enable_stream"])
 		{
-			// Variables to be used as a calibration basis
-			calibrationRmsValues.push_back(rms);
-			rmsMean += rms;
 
-			if (movSwitchEnabled) {
-				calibrationMovRmsValues.push_back(movRms);
-				movRmsMean += movRms;
+			const uint16 streamId = stream->getStreamId();
+			const int64 firstSampleInBlock = getFirstSampleNumberForBlock(streamId);
+			const uint32 numSamplesInBlock = getNumSamplesInBlock(streamId);
+
+			// Enable detection again if the mov. detector channel is "-" or if calibration button was clicked
+			if (!pluginEnabled && (settings[streamId]->movSwitchEnabled || shouldCalibrate))
+			{
+				pluginEnabled = true;
+				settings[streamId]->createMovementEvent(firstSampleInBlock,false);
 			}
-		}
-		else
-		{
-			// Array of RMS values
-			rmsValuesArray.push_back(rms);
-			rmsNumSamplesArray.push_back(rmsEndIdx - rmsStartIdx);
 
-			if (movSwitchEnabled) {
-				movRmsValuesArray.push_back(movRms);
-				movRmsNumSamplesArray.push_back(rmsEndIdx - rmsStartIdx);
+			// Compute thresholds
+			settings[streamId]->threshold = settings[streamId]->rmsMean + settings[streamId]->rippleSds * settings[streamId]->rmsStdDev;
+			settings[streamId]->movThreshold = settings[streamId]->movRmsMean + settings[streamId]->movSds * settings[streamId]->movRmsStdDev;
+
+			// Check if the number of samples to calculate the RMS is not 
+			// larger than the total number of samples provided in this cycle and adjust if necessary
+			if (settings[streamId]->rmsSamples > numSamplesInBlock)
+				settings[streamId]->rmsSamples = numSamplesInBlock;
+
+			// Check if need to calibrate
+			if (shouldCalibrate || (settings[streamId]->movChannChanged && settings[streamId]->movementInputChannel > 0))
+			{
+				LOGC("Calibrating...");
+				settings[streamId]->isCalibrating = true;
+
+				settings[streamId]->pointsProcessed = 0;
+
+				calibrationRmsValues[streamId].clear();
+				calibrationMovRmsValues[streamId].clear();
+
+				shouldCalibrate = false;
 			}
+
+			const float *rippleData = buffer.getReadPointer(settings[streamId]->rippleInputChannel, 0);
+
+			rmsValuesArray[streamId].clear();
+			movRmsValuesArray[streamId].clear();
+			rmsNumSamplesArray[streamId].clear();
+			movRmsNumSamplesArray[streamId].clear();
+
+			for (int rmsStartIdx = 0; rmsStartIdx < numSamplesInBlock; rmsStartIdx += settings[streamId]->rmsSamples)
+			{
+				if (rmsStartIdx + settings[streamId]->rmsSamples > numSamplesInBlock)
+					settings[streamId]->rmsEndIdx = numSamplesInBlock;
+				else
+					settings[streamId]->rmsEndIdx = rmsStartIdx + settings[streamId]->rmsSamples;
+
+				double rms = calculateRms(rippleData, rmsStartIdx, settings[streamId]->rmsEndIdx);
+
+				//TODO: Calculate movRms
+
+				if (settings[streamId]->isCalibrating)
+				{
+					calibrationRmsValues[streamId].push_back(rms);
+					settings[streamId]->rmsMean += rms;
+
+					//TODO: Calculate movRms
+				}
+				else
+				{
+					rmsValuesArray[streamId].push_back(rms);
+					rmsNumSamplesArray[streamId].push_back(settings[streamId]->rmsEndIdx - rmsStartIdx);
+					
+					//TODO: Calculate movRms
+				}
+
+			}
+
+			if (settings[streamId]->isCalibrating)
+			{
+				settings[streamId]->pointsProcessed += numSamplesInBlock;
+
+				if (settings[streamId]->pointsProcessed >= settings[streamId]->calibrationPoints)
+					finishCalibration(streamId);
+
+			}
+			else
+			{
+				detectRipples(rmsValuesArray[streamId], rmsNumSamplesArray[streamId]);
+				//TODO: evalMovement
+			}
+
 		}
 	}
 
-	// Check plugin's current state: calibration or detection
-	if (isCalibrating)
-	{
-		pointsProcessed += realNumberOfSamples;
-
-		// Check if calibration is finished and calculate its statistics for threshold estimation
-		if (pointsProcessed >= calibrationPoints)
-		{
-			finishCalibration();
-		}
-	}
-	else
-	{
-		detectRipples(rmsValuesArray, rmsNumSamplesArray);
-		if (movSwitchEnabled) evalMovement(movRmsValuesArray, movRmsNumSamplesArray);
-	}
-     */
 }
 
 // Calculate the RMS of inputData data from position initIndex (included) to endIndex (not included)
@@ -482,37 +458,46 @@ std::vector<float> RippleDetector::calculateAccelMod(const float* axis[3], int n
 }
 
 // Called when calibration step is over
-void RippleDetector::finishCalibration()
+void RippleDetector::finishCalibration(uint64 streamId)
 {
-		printf("Calibration finished!\n");
+		LOGD("Calibration finished!");
 
-        /*
 		// Set flag to false to end the calibration period
-		isCalibrating = false;
+		settings[streamId]->isCalibrating = false;
 
 		// Calculate RMS mean and standard deviation and the final amplitude threshold
-		rmsMean = rmsMean / (double)calibrationRmsValues.size();
-		for (unsigned int idx = 0; idx < calibrationRmsValues.size(); idx++)
+		int numCalibrationPoints = calibrationRmsValues[streamId].size();
+		printf("Got	%d calibration points\n", numCalibrationPoints);
+		printf("RMS mean before: %f\n", settings[streamId]->rmsMean); 
+		settings[streamId]->rmsMean = settings[streamId]->rmsMean / (double)numCalibrationPoints;
+		printf("RMS mean after: %f\n", settings[streamId]->rmsMean); 
+		for (unsigned int idx = 0; idx < numCalibrationPoints; idx++)
 		{
-			rmsStd += pow(calibrationRmsValues[idx] - rmsMean, 2.0);
+			settings[streamId]->rmsStdDev += pow(calibrationRmsValues[streamId][idx] - settings[streamId]->rmsMean, 2.0);
 		}
-		rmsStd = sqrt(rmsStd / ((double)calibrationRmsValues.size() - 1.0));
-		threshold = rmsMean + uiRippleSds * rmsStd;
+		settings[streamId]->rmsStdDev = sqrt(settings[streamId]->rmsStdDev / ((double)numCalibrationPoints - 1.0));
+		settings[streamId]->threshold = settings[streamId]->rmsMean + settings[streamId]->rippleSds * settings[streamId]->rmsStdDev;
 
 		// Calculate EMR/ACC RMS mean and standard deviation
 		// if the switching mechanism is enabled
+		//TODO: Finish this
+		/*
 		if (movSwitchEnabled) {
-			movRmsMean = movRmsMean / (double)calibrationMovRmsValues.size();
-			for (unsigned int idx = 0; idx < calibrationMovRmsValues.size(); idx++)
+			int numMovCalibrationPoints = calibrationMovRmsValues[streamId].size();
+			movRmsMean = movRmsMean / (double)numMovCalibrationPoints;
+			for (unsigned int idx = 0; idx < numMovCalibrationPoints; idx++)
 			{
-				movRmsStd += pow(calibrationMovRmsValues[idx] - movRmsMean, 2.0);
+				movRmsStdDev += pow(calibrationMovRmsValues[idx] - movRmsMean, 2.0);
 			}
-			movRmsStd = sqrt(movRmsStd / ((double)calibrationMovRmsValues.size() - 1.0));
-			movThreshold = movRmsMean + uiMovSds * movRmsStd;
+			movRmsStdDev = sqrt(movRmsStdDev / ((double)numMovCalibrationPoints - 1.0));
+			movThreshold = movRmsMean + uiMovSds * movRmsStdDev;
 		}
+		*/
 
 		// Print calculated statistics
+		bool movSwitchEnabled = false;
 		if (movSwitchEnabled) {
+			/* TODO: Finish this
 			if (!accelerometerSelected)
 			{
 				printf("Ripple channel -> RMS mean: %f\n"
@@ -538,15 +523,19 @@ void RippleDetector::finishCalibration()
 					rmsMean, rmsStd, uiRippleSds, threshold,
 					movRmsMean, movRmsStd, uiMovSds, movThreshold);
 			}
+			*/
 		}
 		else {
 			printf("Ripple channel -> RMS mean: %f\n"
 				   "Ripple channel -> RMS std: %f\n"
 				   "Ripple channel -> threshold amplifier: %f\n"
 				   "Ripple channel -> final RMS threshold: %f\n",
-				rmsMean, rmsStd, uiRippleSds, threshold);
+				settings[streamId]->rmsMean,
+				settings[streamId]->rmsStdDev,
+				settings[streamId]->rippleSds,
+				settings[streamId]->threshold);
 		}
-         */
+    
 }
 
 // Evaluate RMS values in the detection algorithm
