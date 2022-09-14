@@ -22,10 +22,7 @@ public:
     ~RippleDetectorSettings() {}
     
 	/** Creates an event associated with ripple detection */
-    TTLEventPtr createRippleEvent(int64 sample_number, bool state);
-
-    /** Creates an event associated with movement detection */
-    TTLEventPtr createMovementEvent(int64 sample_number, bool state);
+    TTLEventPtr createEvent(int64 outputLine, int64 sample_number, bool state);
     
     // Time-related variables
     std::chrono::milliseconds refractoryTimeStart;
@@ -81,9 +78,8 @@ public:
     bool flagMovMinTimeDown{ false };        			//Indicates that the minimum time of EMG/ACC below threshold was achieved
     bool accelerometerSelected{ false };    			//True when accelerometer is selected to movement detector
 
-    // TTL event channels
-    EventChannel* rippleEventChannel;
-    EventChannel* movementEventChannel;
+    // TTL event channel
+    EventChannel* eventChannel;
     
 };
 
@@ -121,10 +117,6 @@ public:
 
 
 private:
-    
-    void createEventChannels();
-    
-    void handleTTLEvent(TTLEventPtr event) override;
 
     RippleDetectorEditor* ed;
     
@@ -139,7 +131,7 @@ private:
     
     // Ripple-specific functions
     void finishCalibration(uint64 streamId);
-    void detectRipples(std::vector<double>& rmsValuesArr, std::vector<int>& rmsNumSamplesArray);
+    void detectRipples(uint64 streamId);
     void evalMovement(std::vector<double>& emgRmsValuesArr, std::vector<int>& emgRmsNumSamplesArray);
     double calculateRms(const float* data, int initIndex, int endIndexOpen);
     double calculateRms(std::vector<float> data, int initIndex, int endIndex);
