@@ -21,10 +21,11 @@ RippleDetectorEditor::RippleDetectorEditor(GenericProcessor* parentNode)
 	addTextBoxParameterEditor("rms_samples", 110, 100);
 
 	/* EMG / ACC Movement Detection Settings */
-	addSelectedChannelsParameterEditor("emg_acc_in", 210, 30);
-	addComboBoxParameterEditor("emg_acc_out", 210, 70);
+	addComboBoxParameterEditor("mov_detect", 210, 20);
+	addSelectedChannelsParameterEditor("mov_input", 210, 65);
+	addComboBoxParameterEditor("mov_out", 210, 85);
 
-	addTextBoxParameterEditor("emg_acc_std", 310, 25);
+	addTextBoxParameterEditor("mov_std", 310, 25);
 	addTextBoxParameterEditor("min_steady_time", 310, 50);
 	addTextBoxParameterEditor("min_mov_time", 310, 75);
 
@@ -401,6 +402,8 @@ static int getNextX(Component *rInReference)
 // Called when settings are updated
 void RippleDetectorEditor::updateSettings()
 {
+
+	LOGD("RippleDetectorEditor::updateSettings() called");
 
     //int channelCount = getProcessor()->getNumInputs();
 

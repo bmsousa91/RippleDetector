@@ -37,6 +37,7 @@ public:
     int timeThreshold;            					    //Time threshold (milliseconds)
     unsigned int refractoryTime;    					//Refractory time in milliseconds
     int rmsSamples;                					    //Number of samples in each buffer subdivision for calculating the RMS
+    String movSwitch;            					    //Movement detection switch (on/off)
     double movSds;        							    //Number of standard deviations above average for EMG/ACC
     int minTimeWoMov;        							//Minimum time that EMG RMS must be below threshold to enable detection
     int minTimeWMov;        							//Minimum time that EMG RMS must be above threshold to disable detection
@@ -132,13 +133,13 @@ private:
     // Ripple-specific functions
     void finishCalibration(uint64 streamId);
     void detectRipples(uint64 streamId);
-    void evalMovement(std::vector<double>& emgRmsValuesArr, std::vector<int>& emgRmsNumSamplesArray);
+    void evalMovement(uint64 streamId);
+    
     double calculateRms(const float* data, int initIndex, int endIndexOpen);
     double calculateRms(std::vector<float> data, int initIndex, int endIndex);
     std::vector<float> calculateAccelMod(const float* axis[3], int numberOfSamples);
     
-    bool pluginEnabled {true};
-    bool shouldCalibrate {true};
+    bool shouldCalibrate{ true };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(RippleDetector);
 };
