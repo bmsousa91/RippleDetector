@@ -41,8 +41,6 @@ public:
     double movSds;        							    //Number of standard deviations above average for EMG/ACC
     int minTimeWoMov;        							//Minimum time that EMG RMS must be below threshold to enable detection
     int minTimeWMov;        							//Minimum time that EMG RMS must be above threshold to disable detection
-    int NO_EMG_CHANNEL_ID;    							//Channel ID when "-" option is selected in the EMG combo box
-    int ACCEL_CHANNEL_ID;    							//Channel ID when "ACCEL" option is selected in the EMG combo box
 
     // Internal auxiliary variables
     int numSamplesTimeThreshold;    					//Number of samples corresponding to time threshold according to the sample rate
@@ -105,14 +103,6 @@ public:
 
     /** Called when a parameter is updated */
     void parameterValueChanged(Parameter* param) override;
-
-    // PK: Logic moved to handleTTLEvent
-    //void handleEvent(const EventChannel *rInChannelInfo, const MidiMessage &rInEvent, int sampleNum) override;
-	void sendTtlEvent(int rmsIndex, int val, int outputChannel);
-	
-    /* TODO: Not currently used */
-    //void saveCustomParametersToXml(XmlElement* parentElement);
-	//void loadCustomParametersFromXml();
 
     std::atomic<bool> shouldCalibrate { true };
 

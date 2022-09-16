@@ -213,13 +213,6 @@ void RippleDetector::updateSettings()
 AudioProcessorEditor *RippleDetector::createEditor()
 {
     editor = std::make_unique<RippleDetectorEditor>(this);
-
-    /*
-	RippleDetectorEditor* ed = (RippleDetectorEditor*)getEditor();
-	NO_EMG_CHANNEL_ID = ed->_noMovChannelId - 1;	//Get the id for "-" and "ACCEL" options in the EMG/ACCEL combobox
-	ACCEL_CHANNEL_ID = ed->_accelChannelId - 1;		//Get the id for "-" and "ACCEL" options in the EMG/ACCEL combobox
-    */
-
     return editor.get();
 }
 
@@ -508,9 +501,7 @@ void RippleDetector::finishCalibration(uint64 streamId)
 		settings[streamId]->rmsStdDev = sqrt(settings[streamId]->rmsStdDev / ((double)numCalibrationPoints - 1.0));
 		settings[streamId]->threshold = settings[streamId]->rmsMean + settings[streamId]->rippleSds * settings[streamId]->rmsStdDev;
 
-		// Calculate EMR/ACC RMS mean and standard deviation
-		// if the switching mechanism is enabled
-		//TODO: Finish this
+		// Calculate EMR/ACC RMS mean and standard deviation if the switching mechanism is enabled
 		if (settings[streamId]->movSwitchEnabled) 
 		{
 			int numMovCalibrationPoints = calibrationMovRmsValues[streamId].size();
@@ -716,48 +707,3 @@ void RippleDetector::evalMovement(uint64 streamId)
 	}
 
 }
-
-/*
-// Save last parameters
-void RippleDetector::saveCustomParametersToXml(XmlElement* parentElement)
-{
-	//XmlElement* mainNode = parentElement->createNewChildElement("RippleDetector");
-	//RippleDetectorEditor* ed = (RippleDetectorEditor*)getEditor();
-
-	//mainNode->setAttribute("rippleInputCh", ed->_inChannel);
-	//mainNode->setAttribute("input2", m_input2);
-	//mainNode->setAttribute("input1gate", m_input1gate);
-	//mainNode->setAttribute("input2gate", m_input2gate);
-	//mainNode->setAttribute("logicOp", m_logicOp);
-	//mainNode->setAttribute("outputChan", m_outputChan);
-	//mainNode->setAttribute("window", m_window);
-	//mainNode->setAttribute("duration", m_pulseDuration);
-
-}
-
-// Load last parameters
-void RippleDetector::loadCustomParametersFromXml()
-{
-	//if (parametersAsXml != nullptr)
-	//{
-	//	forEachXmlChildElement(*parametersAsXml, mainNode)
-	//	{
-	//		if (mainNode->hasTagName("RippleDetector"))
-	//		{
-	//			RippleDetectorEditor* ed = (RippleDetectorEditor*)getEditor();
-
-	//			ed->_inChannel = mainNode->getIntAttribute("rippleInputCh");
-	//			//m_input2 = mainNode->getIntAttribute("input2");
-	//			m_input1gate = mainNode->getBoolAttribute("input1gate");
-	//			m_input2gate = mainNode->getBoolAttribute("input2gate");
-	//			m_logicOp = mainNode->getIntAttribute("logicOp");
-	//			m_outputChan = mainNode->getIntAttribute("outputChan");
-	//			m_window = mainNode->getIntAttribute("window");
-	//			m_pulseDuration = mainNode->getIntAttribute("duration");
-
-	//			//editor->updateSettings();
-	//		}
-	//	}
-	//}
-}
-*/
