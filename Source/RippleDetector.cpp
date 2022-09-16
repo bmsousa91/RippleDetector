@@ -116,7 +116,7 @@ RippleDetector::RippleDetector() : GenericProcessor("Ripple Detector")
 
     addFloatParameter(
 		Parameter::STREAM_SCOPE,
-		"min_steady_time",
+		"min_time_st",
 		"Minimum time steady (in milliseconds). The minimum time below the EMG/ACC threshold to enable detection",
 		5000,
 		0,
@@ -126,7 +126,7 @@ RippleDetector::RippleDetector() : GenericProcessor("Ripple Detector")
 
 	addFloatParameter(
 		Parameter::STREAM_SCOPE,
-		"min_mov_time",
+		"min_time_mov",
 		"Minimum time with movement (in milliseconds). The minimum time above the EMG/ACC threshold to disable detection",
 		10,
 		0,
@@ -183,8 +183,8 @@ void RippleDetector::updateSettings()
 		parameterValueChanged(stream->getParameter("mov_input"));
 		parameterValueChanged(stream->getParameter("mov_out"));
 		parameterValueChanged(stream->getParameter("mov_std"));
-		parameterValueChanged(stream->getParameter("min_steady_time"));
-		parameterValueChanged(stream->getParameter("min_mov_time"));
+		parameterValueChanged(stream->getParameter("min_time_st"));
+		parameterValueChanged(stream->getParameter("min_time_mov"));
 
 		//Add AUX channels to use for accelerometer data
 		settings[stream->getStreamId()]->auxChannelIndices.clear();
@@ -297,13 +297,13 @@ void RippleDetector::parameterValueChanged(Parameter* param)
 	{
 		settings[streamId]->movSds = (float)param->getValue();
 	}
-	else if (paramName.equalsIgnoreCase("Min_Steady_Time"))
+	else if (paramName.equalsIgnoreCase("min_time_st"))
 	{
 		settings[streamId]->minTimeWoMov = (int)param->getValue();
 		settings[streamId]->minMovSamplesBelowThresh = 
 			ceil(getDataStream(streamId)->getSampleRate() * settings[streamId]->minTimeWoMov / 1000);
 	}
-	else if (paramName.equalsIgnoreCase("Min_Mov_Time"))
+	else if (paramName.equalsIgnoreCase("min_time_mov"))
 	{
 		settings[streamId]->minTimeWMov = (int)param->getValue();
 		settings[streamId]->minMovSamplesAboveThresh = 
