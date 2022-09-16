@@ -106,8 +106,6 @@ public:
     /** Called when a parameter is updated */
     void parameterValueChanged(Parameter* param) override;
 
-    void setCalibrate(bool shouldCalibrate);
-
     // PK: Logic moved to handleTTLEvent
     //void handleEvent(const EventChannel *rInChannelInfo, const MidiMessage &rInEvent, int sampleNum) override;
 	void sendTtlEvent(int rmsIndex, int val, int outputChannel);
@@ -116,6 +114,7 @@ public:
     //void saveCustomParametersToXml(XmlElement* parentElement);
 	//void loadCustomParametersFromXml();
 
+    std::atomic<bool> shouldCalibrate { true };
 
 private:
 
@@ -138,8 +137,6 @@ private:
     double calculateRms(const float* data, int initIndex, int endIndexOpen);
     double calculateRms(std::vector<float> data, int initIndex, int endIndex);
     std::vector<float> calculateAccelMod(const float* axis[3], int numberOfSamples);
-    
-    bool shouldCalibrate{ true };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(RippleDetector);
 };

@@ -264,8 +264,7 @@ ScopedPointer<ComboBox> RippleDetectorEditor::createComboBox(String tooltipText)
 void RippleDetectorEditor::buttonClicked(Button *pInButtonClicked)
 {
 	/* Calibrate button was clicked */
-	//rippleDetector->setCalibrate(true);
-	LOGD("Clicked calibrate button!");
+	rippleDetector->shouldCalibrate = true;
 }
 
 // Called when the value of any combo box changes
