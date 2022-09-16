@@ -1,9 +1,8 @@
 # Ripple Detector plugin for the Open Ephys GUI
-Open Ephys GUI plugin for ripple detection. It contains an embedded mechanism based on EMG or accelerometer data that blocks ripple events when movement is detected. **Last compatible version of the Open Ephys GUI: v0.5.5**
+Open Ephys GUI plugin for ripple detection. It contains an embedded mechanism based on EMG or accelerometer data that blocks ripple events when movement is detected. **Last compatible version of the Open Ephys GUI: v0.6.1**
 
 ## Installation
-First, you will have to download the Open Ephys (OE) GUI source code and compile it (https://open-ephys.github.io/gui-docs/Developer-Guide/Compiling-the-GUI.html). The second step is to create the build files for the plugin and compile it. Again, the official OE website provides all the necessary instructions (https://open-ephys.github.io/gui-docs/Developer-Guide/Compiling-plugins.html). For those using Windows 10, I wrote my own instructions for compiling the OE GUI and the RippleDetector plugin using Visual Studio 2019 Community. You will find these instructions in the "How to install OE and RippleDetector from source code - Win10_VS.pdf" file. Hope it helps!  
-
+First, you will have to download the Open Ephys (OE) GUI source code and compile it (https://open-ephys.github.io/gui-docs/Developer-Guide/Compiling-the-GUI.html). The second step is to create the build files for the plugin and compile it. Again, the official OE website provides all the necessary instructions (https://open-ephys.github.io/gui-docs/Developer-Guide/Compiling-plugins.html). 
 ## Usage
 - Use this plugin after a Bandpass Filter module, filtering the signal in the ripple frequency band;
 - Use this plugin before a sink module (LFP Viewer, Recording Node, or Pulse Pal, for instance).
@@ -17,14 +16,15 @@ Below is a screenshot of the module being used with real data (hc-18 dataset ava
 
 ![Image of RippleDetector](Resources/Figures/rippleDetector.png)
 
-- Input: input channel from which ripple data will be processed;
-- Output: output TTL channel where detection events are marked;
-- SD: number of RMS standard deviations above the mean to calculate the amplitude threshold;
+- Ripple Input: input channel from which ripple data will be processed;
+- Ripple Output: output TTL channel where detection events are marked;
+- Ripple SD: number of RMS standard deviations above the mean to calculate the amplitude threshold;
 - Time Thr. (ms): time threshold - the minimum period during which the RMS values must be above the amplitude threshold for ripples to be detected; 
 - Refr. Time (ms): refractory time - period after each detection event in which new ripples are not detected;
 - RMS Samp.: RMS samples - number of samples to calculate the RMS value;
 
-- EMG/ACC: electromyogram or accelerometer data input channel for movement monitoring. If "-" is selected, the mechanism of event blockage based on movement detection is disabled and ripples are not silenced. When the auxiliary channels are enabled (via the Rhythm FPGA module), the "Accel." option appears in the list of available inputs as a virtual channel. If selected, the RMS values are calculated over the magnitude of the acceleration vector. Any other option selected is treated as it was an EMG channel (see the section "Ripple detection algorithm");
+- Mov Detect: the mode of movement detection. If "OFF" is selected, the mechanism of event blockage based on movement detection is disabled and ripples are not silenced. If "ACC" is selected, the RMS of all auxiliary channels are used to calculate the magnitude of the acceleration vector. If "EMG" is selected, an input channel is designated  (see the section "Ripple detection algorithm");
+- Mov Input: the channel to use for movement detection in "EMG" mode only. 
 - Mov. Out: movement output - output TTL channel that indicates the period when ripple detection is silenced by movement (0: events not blocked, 1: events blocked);
 - EMG/ACC SD: number of RMS standard deviations above the mean to calculate the amplitude threshold for movement detection based on EMG or accelerometer;
 - Min Time St (ms): minimum time steady - minimum period of immobility (RMS below the amplitude threshold) required to enable ripple detection again after movement is detected;
