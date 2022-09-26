@@ -324,7 +324,7 @@ void RippleDetector::process(AudioBuffer<float>& buffer)
 			if (!numSamplesInBlock) return;
 
 			// Enable detection again if the mov. detector channel is "-" or if calibration button was clicked
-			if (!settings[streamId]->pluginEnabled && (settings[streamId]->movSwitchEnabled || shouldCalibrate))
+			if (!settings[streamId]->pluginEnabled && (!settings[streamId]->movSwitchEnabled || shouldCalibrate))
 			{
 				settings[streamId]->pluginEnabled = true;
 				TTLEventPtr event = settings[streamId]->createEvent(
