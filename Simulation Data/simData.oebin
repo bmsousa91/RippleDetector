@@ -3,10 +3,10 @@
    "continuous":[
 	  {
          "folder_name":"rippleSimData/",
-         "sample_rate":40000,
+         "sample_rate":30000,
          "source_processor_name":"Demo source",
          "source_processor_id":100,
-         "source_processor_sub_idx":0,
+         "source_processor_sub_idx":5,
          "recorded_processor":"Demo source",
          "recorded_processor_id":100,
          "num_channels":2,
@@ -21,7 +21,7 @@
                "source_processor_index":0,
                "recorded_processor_index":0
             },
-            {
+			{
                "channel_name":"CH1",
                "description":"Demo data channel",
                "identifier":"genericdata.continuous",
