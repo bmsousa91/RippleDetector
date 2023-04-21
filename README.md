@@ -1,5 +1,5 @@
 # Ripple Detector plugin for the Open Ephys GUI
-Open Ephys GUI plugin for ripple detection. It contains an embedded mechanism based on EMG or accelerometer data that blocks ripple events when movement is detected. **This code is compatible with the version v0.5.5 of the Open Ephys GUI. For newer versions of the GUI, you can download the Ripple Detector directly from the Plugin Installer**
+Open Ephys GUI plugin for ripple detection. It contains an embedded mechanism based on EMG or accelerometer data that blocks ripple events when movement is detected. **This code is compatible with the version v0.5.5 of the Open Ephys GUI. For newer versions of the GUI, you can download the Ripple Detector directly via the Plugin Installer utility.**
 
 ## Installation
 First, you will have to download the Open Ephys (OE) GUI source code and compile it (https://open-ephys.github.io/gui-docs/Developer-Guide/Compiling-the-GUI.html). The second step is to create the build files for the plugin and compile it. Again, the official OE website provides all the necessary instructions (https://open-ephys.github.io/gui-docs/Developer-Guide/Compiling-plugins.html).
