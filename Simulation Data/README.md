@@ -1,6 +1,10 @@
 
 ## Simulation data
-The file continuous.dat in the directory "continuous/rippleSimData/" includes simulation data to test the ripple detection plugin. Data are composed by pink noise in the background and three kinds of events: ripples, fast ripples and spike artefacts. Events occur randomly every 1.5 second with a likelyhood of 33% each.
+You will find simulation data to test the ripple detection plugin here:
+https://drive.google.com/file/d/1uRyO_ICTTNLRneUXlXvy1NprQgvKjLUF/view?usp=sharing
+Put the continuous.dat file inside the "continuous/rippleSimData/" directory.
+
+Data are composed by pink noise in the background and three kinds of events: ripples, fast ripples and spike artefacts. Events occur randomly every 1.5 second with a likelyhood of 33% each.
 
 - Ripples: events in the 150Hz-250Hz frequency band;
 - Fast ripples: events in the 250Hz-500Hz frequency band;
